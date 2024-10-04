@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ConsultaCnpjReceita</name>
+    </assembly>
+    <members>
+        <member name="T:WebApi.Controllers.UtilidadesController">
+            <summary>
+            Controller responsável por disponibilizar ações de utilidades
+            </summary>
+        </member>
+        <member name="M:WebApi.Controllers.UtilidadesController.ConsultarListaCnpj">
+            <summary>
+            Consulta a lista de CNPJs armazenados no banco de dados.
+            </summary>
+            <returns></returns>
+        </member>
+    </members>
+</doc>
