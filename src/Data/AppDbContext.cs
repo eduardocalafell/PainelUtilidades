@@ -5,7 +5,8 @@ namespace Data.AppDbContext;
 
 public class AppDbContext : DbContext
 {
-    public DbSet<Estoque> Estoque { get; set; }
+    public DbSet<Estoque> CnpjEstoque { get; set; }
+    public DbSet<Root> RetornoReceita { get; set; }
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {

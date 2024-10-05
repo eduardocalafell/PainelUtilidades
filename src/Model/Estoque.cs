@@ -9,14 +9,14 @@ namespace ConsultaCnpjReceita.Model
     {
         public Estoque() { }
 
-        public Estoque(int id, string docCedente, string docSacado)
+        public Estoque(string docCedente, string docSacado)
         {
-            Id = id;
+            Id = Guid.NewGuid();
             DocCedente = docCedente;
             DocSacado = docSacado;
         }
 
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string DocCedente { get; set; }
         public string DocSacado { get; set; }
     }
