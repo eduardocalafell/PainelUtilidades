@@ -1,0 +1,45 @@
+# Pastas e arquivos de build
+bin/
+obj/
+
+# Configurações locais do Visual Studio
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Pastas temporárias
+tmp/
+temp/
+*.cache
+
+# Arquivos de logs
+*.log
+*.tlog
+
+# Configurações de pacotes NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+project.lock.json
+project.fragment.lock.json
+
+# Publicação e dependências
+publish/
+.vs/
+
+# Arquivos do Teste Unitário
+TestResults/
+
+# Arquivos de configuração temporários
+appsettings.Development.json
+
+# Arquivos do Docker
+docker-compose.override.yml
+docker-compose.*
+
+# Certificados de desenvolvimento local
+*.pfx
+*.p12
