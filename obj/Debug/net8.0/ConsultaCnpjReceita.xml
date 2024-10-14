@@ -15,5 +15,17 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="T:ConsultaCnpjReceita.src.Data.Initial">
+            <inheritdoc />
+        </member>
+        <member name="M:ConsultaCnpjReceita.src.Data.Initial.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:ConsultaCnpjReceita.src.Data.Initial.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:ConsultaCnpjReceita.src.Data.Initial.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
     </members>
 </doc>

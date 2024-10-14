@@ -29,30 +29,46 @@ public class UtilidadesService
 
         var listaCnpjEstoque = _context.CnpjEstoque.ToList();
         var listaCnpjExistente = _context.RetornoReceita.Select(x => FormatarCnpj(x.cnpj)).ToList();
+        var listaCnpjPesquisa = new List<string>();
+        bool houveInclusao = false;
 
         foreach (var item in listaCnpjEstoque)
         {
             var cnpjCedente = FormatarCnpj(item.DocCedente);
             var cnpjSacado = FormatarCnpj(item.DocSacado);
+            houveInclusao = false;
 
             var response = client.GetAsync($"{url}{cnpjCedente}").Result;
-            if (response.IsSuccessStatusCode && !listaCnpjExistente.Contains(cnpjCedente))
+            if (response.IsSuccessStatusCode && !listaCnpjExistente.Contains(cnpjCedente) && !listaCnpjPesquisa.Contains(cnpjCedente))
             {
                 var json = response.Content.ReadAsStringAsync().Result;
                 var retorno = JsonConvert.DeserializeObject<Root>(json);
-                if (retorno.cnpj is not null) _context.RetornoReceita.Add(retorno);
+                if (retorno.cnpj is not null)
+                {
+                    listaCnpjPesquisa.Add(cnpjCedente);
+                    _context.RetornoReceita.Add(retorno);
+                    houveInclusao = true;
+                }
             }
 
             response = client.GetAsync($"{url}{cnpjSacado}").Result;
-            if (response.IsSuccessStatusCode && !listaCnpjExistente.Contains(cnpjSacado))
+            if (response.IsSuccessStatusCode && !listaCnpjExistente.Contains(cnpjSacado) && !listaCnpjPesquisa.Contains(cnpjSacado))
             {
                 var json = response.Content.ReadAsStringAsync().Result;
                 var retorno = JsonConvert.DeserializeObject<Root>(json);
-                if (retorno.cnpj is not null) _context.RetornoReceita.Add(retorno);
+                if (retorno.cnpj is not null)
+                {
+                    listaCnpjPesquisa.Add(cnpjCedente);
+                    _context.RetornoReceita.Add(retorno);
+                    houveInclusao = true;
+                }
             }
 
-            _context.SaveChanges();
-            Thread.Sleep(60000);
+            if (houveInclusao)
+            {
+                _context.SaveChanges();
+                Thread.Sleep(60000);
+            }
         }
 
         return listaRetorno;
