@@ -1,0 +1,38 @@
+<?xml version='1.0'?>
+
+<arquivoposicao_4_01><fundo>
+	<header>
+		<isin>BR03IHCTF010</isin>
+		<cnpj>24220859000174</cnpj>
+		<nome>DIP FINANCING 11 FIDC NAO-PADRONIZADOS - MEZANINO</nome>
+		<dtposicao>20241023</dtposicao>
+		<nomeadm>SINGULARE CTVM S A</nomeadm>
+		<cnpjadm>62285390000140</cnpjadm>
+		<nomegestor>M8 PARTNERS GESTORA DE RECURSOS LTD</nomegestor>
+		<cnpjgestor>18038439000179</cnpjgestor>
+		<nomecustodiante>SINGULARE CTVM SA</nomecustodiante>
+		<cnpjcustodiante>62285390000140</cnpjcustodiante>
+		<valorcota>2802.679402940</valorcota>
+		<quantidade>18579.616314790</quantidade>
+		<patliq>52072707.96</patliq>
+		<valorativos>52072707.96</valorativos>
+		<valorreceber>0.00</valorreceber>
+		<valorpagar>0.00</valorpagar>
+		<vlcotasemitir>0.00</vlcotasemitir>
+		<vlcotasresgatar>0.00</vlcotasresgatar>
+		<codanbid>479608</codanbid>
+		<tipofundo>278</tipofundo>
+		<nivelrsc></nivelrsc>
+	</header>
+	<caixa>
+		<isininstituicao>******</isininstituicao>
+		<tpconta>D</tpconta>
+		<saldo>0.00</saldo>
+		<nivelrsc>BB</nivelrsc>
+	</caixa>
+	<fidc>
+		<valorfinanceiro>52072707.96</valorfinanceiro>
+	</fidc>
+</fundo>
+
+</arquivoposicao_4_01>

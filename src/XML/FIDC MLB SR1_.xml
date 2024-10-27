@@ -1,0 +1,44 @@
+<?xml version='1.0'?>
+
+<arquivoposicao_4_01><fundo>
+	<header>
+		<isin>BR04I2CTF034</isin>
+		<cnpj>35654917000194</cnpj>
+		<nome>FIDC MS OPEN - SENIOR 1</nome>
+		<dtposicao>20241023</dtposicao>
+		<nomeadm>SINGULARE CTVM S A</nomeadm>
+		<cnpjadm>62285390000140</cnpjadm>
+		<nomegestor>M8 PARTNERS GESTORA DE RECURSOS LTD</nomegestor>
+		<cnpjgestor>18038439000179</cnpjgestor>
+		<nomecustodiante>SINGULARE CTVM SA</nomecustodiante>
+		<cnpjcustodiante>62285390000140</cnpjcustodiante>
+		<valorcota>17109.899224070</valorcota>
+		<quantidade>2769.603101070</quantidade>
+		<patliq>47387629.95</patliq>
+		<valorativos>47270344.46</valorativos>
+		<valorreceber>117285.49</valorreceber>
+		<valorpagar>0.00</valorpagar>
+		<vlcotasemitir>0.00</vlcotasemitir>
+		<vlcotasresgatar>0.00</vlcotasresgatar>
+		<codanbid>536229</codanbid>
+		<tipofundo>278</tipofundo>
+		<nivelrsc></nivelrsc>
+	</header>
+	<caixa>
+		<isininstituicao>******</isininstituicao>
+		<tpconta>D</tpconta>
+		<saldo>0.00</saldo>
+		<nivelrsc>BB</nivelrsc>
+	</caixa>
+	<provisao>
+		<codprov>999</codprov>
+		<credeb>C</credeb>
+		<dt>20241108</dt>
+		<valor>117285.49</valor>
+	</provisao>
+	<fidc>
+		<valorfinanceiro>47270344.46</valorfinanceiro>
+	</fidc>
+</fundo>
+
+</arquivoposicao_4_01>

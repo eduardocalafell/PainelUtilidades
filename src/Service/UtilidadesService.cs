@@ -3,6 +3,10 @@ using Data.AppDbContext;
 using Newtonsoft.Json;
 using ConsultaCnpjReceita.Model;
 using System.Text.RegularExpressions;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Xml.Serialization;
+using System.Globalization;
 
 namespace ConsultaCnpjReceita.Service;
 
@@ -27,12 +31,16 @@ public class UtilidadesService
         var url = Configuration.GetSection("ReceitaWs:Url").Value;
         HttpClient client = new HttpClient();
 
-        var listaCnpjEstoque = _context.CnpjEstoque.ToList();
-        var listaCnpjExistente = _context.RetornoReceita.Select(x => FormatarCnpj(x.cnpj)).ToList();
+        var listaCnpjEstoque = new List<object>();
+        var listaCnpjEstoqueCast = new List<tb_stg_estoque_full>();
+        listaCnpjEstoque.AddRange(_context.tb_stg_estoque_full.ToList());
+        listaCnpjEstoque.AddRange(_context.tb_stg_estoque_full_hemera.ToList());
+        listaCnpjEstoqueCast = listaCnpjEstoque.Cast<tb_stg_estoque_full>().ToList();
+        var listaCnpjExistente = _context.tb_aux_Retorno_Receita.Select(x => FormatarCnpj(x.cnpj)).ToList();
         var listaCnpjPesquisa = new List<string>();
         bool houveInclusao = false;
 
-        foreach (var item in listaCnpjEstoque)
+        foreach (var item in listaCnpjEstoqueCast)
         {
             var cnpjCedente = FormatarCnpj(item.DocCedente);
             var cnpjSacado = FormatarCnpj(item.DocSacado);
@@ -46,7 +54,7 @@ public class UtilidadesService
                 if (retorno.cnpj is not null)
                 {
                     listaCnpjPesquisa.Add(cnpjCedente);
-                    _context.RetornoReceita.Add(retorno);
+                    _context.tb_aux_Retorno_Receita.Add(retorno);
                     houveInclusao = true;
                 }
             }
@@ -59,7 +67,7 @@ public class UtilidadesService
                 if (retorno.cnpj is not null)
                 {
                     listaCnpjPesquisa.Add(cnpjCedente);
-                    _context.RetornoReceita.Add(retorno);
+                    _context.tb_aux_Retorno_Receita.Add(retorno);
                     houveInclusao = true;
                 }
             }
@@ -74,9 +82,207 @@ public class UtilidadesService
         return listaRetorno;
     }
 
+    public string RecuperarXmlAnbima()
+    {
+        var url = Configuration.GetSection("Singulare:Url").Value;
+        var user = Configuration.GetSection("Singulare:Usuario").Value;
+        var pswr = Configuration.GetSection("Singulare:Senha").Value;
+        var xmlExistentes = _context.tb_aux_Xml_Anbima.ToList();
+        var listaFidcs = RecuperarFidcs();
+
+        HttpClient client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{pswr}")));
+
+        // Autenticação
+        var response = client.PostAsync(url + "painel/token/api", null).Result;
+        var authToken = JsonConvert.DeserializeObject<SingulareApiAuthResponse>(response.Content.ReadAsStringAsync().Result).Token;
+
+        // Recupera XML
+        client.DefaultRequestHeaders.Authorization = null;
+        client.DefaultRequestHeaders.Add("x-api-key", authToken);
+
+        listaFidcs.ForEach(f =>
+        {
+            var retry = 0;
+            do
+            {
+                response = client.GetAsync(url + $"netreport/report/xml-anbima/{f}").Result;
+                if (response.IsSuccessStatusCode)
+                {
+                    var ret = response.Content.ReadAsStringAsync().Result;
+                    XmlSerializer serializer = new XmlSerializer(typeof(ArquivoPosicao));
+                    using (StringReader reader = new StringReader(ret))
+                    {
+                        ArquivoPosicao arquivoPosicao = (ArquivoPosicao)serializer.Deserialize(reader);
+
+                        if (arquivoPosicao.Fundo is not null)
+                        {
+                            XmlAmbimaModel xmlAmbimaModel = new XmlAmbimaModel
+                            {
+                                Isin = arquivoPosicao.Fundo?.Header?.Isin ?? string.Empty,
+                                Cnpj = arquivoPosicao.Fundo?.Header?.Cnpj ?? string.Empty,
+                                Nome = arquivoPosicao.Fundo?.Header?.Nome ?? string.Empty,
+                                DataPosicao = arquivoPosicao.Fundo?.Header?.DataPosicao ?? string.Empty,
+                                NomeAdm = arquivoPosicao.Fundo?.Header?.NomeAdm ?? string.Empty,
+                                CnpjAdm = arquivoPosicao.Fundo?.Header?.CnpjAdm ?? string.Empty,
+                                NomeGestor = arquivoPosicao.Fundo?.Header?.NomeGestor ?? string.Empty,
+                                CnpjGestor = arquivoPosicao.Fundo?.Header?.CnpjGestor ?? string.Empty,
+                                NomeCustodiante = arquivoPosicao.Fundo?.Header?.NomeCustodiante ?? string.Empty,
+                                CnpjCustodiante = arquivoPosicao.Fundo?.Header?.CnpjCustodiante ?? string.Empty,
+                                ValorCota = arquivoPosicao.Fundo?.Header?.ValorCota ?? 0,
+                                Quantidade = arquivoPosicao.Fundo?.Header?.Quantidade ?? 0,
+                                PatrimonioLiquido = arquivoPosicao.Fundo?.Header?.PatrimonioLiquido ?? 0,
+                                ValorAtivos = arquivoPosicao.Fundo?.Header?.ValorAtivos ?? 0,
+                                ValorReceber = arquivoPosicao.Fundo?.Header?.ValorReceber ?? 0,
+                                ValorPagar = arquivoPosicao.Fundo?.Header?.ValorPagar ?? 0,
+                                VlCotasEmitir = arquivoPosicao.Fundo?.Header?.VlCotasEmitir ?? 0,
+                                VlCotasResgatar = arquivoPosicao.Fundo?.Header?.VlCotasResgatar ?? 0,
+                                CodAnbid = arquivoPosicao.Fundo?.Header?.CodAnbid ?? 0,
+                                TipoFundo = arquivoPosicao.Fundo?.Header?.TipoFundo ?? 0,
+                                NivelRsc = arquivoPosicao.Fundo?.Header?.NivelRsc ?? string.Empty,
+                                TipoConta = arquivoPosicao.Fundo?.Caixa?.TipoConta ?? string.Empty,
+                                Saldo = arquivoPosicao.Fundo?.Caixa?.Saldo ?? 0,
+                                ValorFinanceiro = arquivoPosicao.Fundo?.FIDC?.ValorFinanceiro ?? 0,
+                                CodProv = arquivoPosicao.Fundo?.Provisao?.CodProv ?? 0,
+                                CreDebProv = arquivoPosicao.Fundo?.Provisao?.CreDeb ?? string.Empty,
+                                DataProv = arquivoPosicao.Fundo?.Provisao?.Data ?? string.Empty,
+                                ValorProv = arquivoPosicao.Fundo?.Provisao?.Valor ?? 0
+                            };
+
+                            if (xmlExistentes.FirstOrDefault(x => x.DataPosicao == xmlAmbimaModel.DataPosicao && x.Nome == xmlAmbimaModel.Nome)! == null)
+                            {
+                                _context.tb_aux_Xml_Anbima.Add(xmlAmbimaModel);
+                                _context.SaveChanges();
+                            }
+                            else
+                            {
+                                StreamWriter log = new($"{Environment.CurrentDirectory}/.log", append: true);
+                                log.WriteLine($"[{DateTime.Now:s}] Posição do dia {DateTime.Parse(xmlAmbimaModel.DataPosicao.Substring(0, 4) + "-" + xmlAmbimaModel.DataPosicao.Substring(4, 2) + "-" + xmlAmbimaModel.DataPosicao.Substring(6, 2), CultureInfo.GetCultureInfo("pt-BR")):dd/MM/yyyy} para o CNPJ {xmlAmbimaModel.Cnpj} - {xmlAmbimaModel.Nome} já recuperado.");
+                                log.Close();
+                            }
+                        }
+                        else
+                        {
+                            StreamWriter log = new($"{Environment.CurrentDirectory}/.log", append: true);
+                            log.WriteLine($"[{DateTime.Now:s}] Posição do fundo {f} não encontrado.");
+                            log.Close();
+                        }
+                    }
+                    break;
+                }
+                else
+                {
+                    StreamWriter log = new($"{Environment.CurrentDirectory}/.log", append: true);
+                    if (retry < 2)
+                    {
+                        log.WriteLine($"[{DateTime.Now:s}] Erro ao recuperar XML do fundo {f}. Tentativa {retry + 1}");
+                    }
+                    else
+                    {
+                        log.WriteLine($"[{DateTime.Now:s}] Tentativas excedidas ao recuperar XML do fundo {f}.");
+                    }
+                    log.Close();
+                    retry++;
+                    Thread.Sleep(60000);
+                }
+            } while (!response.IsSuccessStatusCode && retry < 2);
+        });
+
+        return "XMLs recuperados com sucesso!";
+    }
+
     private static string FormatarCnpj(string cnpj)
     {
         var r = new Regex("[^0-9a-zA-Z]+");
         return r.Replace(cnpj, "");
+    }
+
+    private List<string> RecuperarFidcs()
+    {
+        return
+        [
+            "AURUM FIDC",
+            "AURUM FIDC MZ L",
+            "BRAVA FIDC",
+            "BRAVA FIDC MZ1",
+            "BRAVA FIDC SR1",
+            "CUPERTINO FIDC",
+            "DIP FINAN11 FIC",
+            "DIP FINANCI MEZ",
+            "DIP FINANCI SEN",
+            "DIP FINANCING11",
+            "DIPFINANCING11",
+            "EMUNAH FIDC",
+            "EMUNAH FIDC MZ1",
+            "EMUNAH FIDC MZ2",
+            "EMUNAH FIDC SR1",
+            "EMUNAH FIDC SR2",
+            "F18 FIDC",
+            "F18 FIDC MEZ",
+            "F18 FIDC SEN",
+            "FIDC ML BANK II",
+            "FIDC MLB",
+            "FIDC MLB MEZ",
+            "FIDC MLB SR1",
+            "GAVEA OPEN FIDC",
+            "GAVEA REAL FIDC",
+            "GAVEA REAL SEN1",
+            "GAVEA SUL FIDC",
+            "GAVEA SUL MEZA2",
+            "GAVEA SUL MEZA3",
+            "GAVEA SUL MEZA5",
+            "GAVEA SUL MEZAN",
+            "GAVEA SUL SEN10",
+            "GAVEA SUL SEN11",
+            "GAVEA SUL SEN12",
+            "GAVEA SUL SEN2",
+            "GAVEA SUL SEN3",
+            "GAVEA SUL SEN4",
+            "GAVEA SUL SEN5",
+            "GAVEA SUL SEN6",
+            "GAVEA SUL SEN7",
+            "GAVEA SUL SEN8",
+            "GAVEA SUL SEN9",
+            "GAVEA SUL SENIO",
+            "GPR FIDC",
+            "GPR FIDC MEZ2",
+            "GPR FIDC MEZA",
+            "GPR FIDC SEN",
+            "GPR FIDC SEN 2",
+            "GPR FIDC SEN 3",
+            "ONE7LB SUBJR",
+            "ONE7LP MEZ CI",
+            "ONE7LP MEZ DI",
+            "ONE7LP MEZ E",
+            "ONE7LP MEZ F",
+            "ONE7LP MEZ G",
+            "ONE7LP SEN 14",
+            "ONE7LP SEN 15",
+            "PHD FIDC",
+            "PHD FIDC MEZ",
+            "PHD FIDC SEN",
+            "PHD FIDC SUB",
+            "SC FIDC",
+            "SC FIDC SEN1",
+            "SC FIDC SEN2",
+            "SFT CI FIDC",
+            "SFT CI FIDC SR1",
+            "SIGMA CRED FIDC",
+            "SIGMA CRED MEZ",
+            "SIGMA CRED SEN",
+            "SP ADGM FIDC",
+            "SP ADGM MEZ1",
+            "SP ADGM MEZ2",
+            "SP ADGM MEZ3",
+            "SP ADGM SEN1",
+            "SP ADGM SEN2",
+            "SP ADGM SEN3",
+            "SP ADGM SEN4",
+            "SUPER BOX FIDC",
+            "SUPER BOX MEZ",
+            "SUPER BOX SEN",
+            "TMOV FIDC",
+            "TMOV FIDC SR"
+        ];
     }
 }

@@ -15,6 +15,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:WebApi.Controllers.UtilidadesController.RecuperarXmlAnbima">
+            <summary>
+            Recupera os XMLs de todos os fundos cadastrados.
+            </summary>
+            <returns></returns>
+        </member>
         <member name="T:ConsultaCnpjReceita.src.Data.Initial">
             <inheritdoc />
         </member>

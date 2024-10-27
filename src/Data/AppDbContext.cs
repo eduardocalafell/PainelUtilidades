@@ -5,8 +5,10 @@ namespace Data.AppDbContext;
 
 public class AppDbContext : DbContext
 {
-    public DbSet<Estoque> CnpjEstoque { get; set; }
-    public DbSet<Root> RetornoReceita { get; set; }
+    public DbSet<tb_stg_estoque_full> tb_stg_estoque_full { get; set; }
+    public DbSet<tb_stg_estoque_full_hemera> tb_stg_estoque_full_hemera { get; set; }
+    public DbSet<Root> tb_aux_Retorno_Receita { get; set; }
+    public DbSet<XmlAmbimaModel> tb_aux_Xml_Anbima { get; set; }
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {

@@ -1,0 +1,38 @@
+<?xml version='1.0'?>
+
+<arquivoposicao_4_01><fundo>
+	<header>
+		<isin>BRGVSLCTF0E1</isin>
+		<cnpj>18185812000114</cnpj>
+		<nome>GAVEA SUL FIDC MULTISSETORIAL LP - SENIOR 10</nome>
+		<dtposicao>20231221</dtposicao>
+		<nomeadm>SINGULARE CTVM S A</nomeadm>
+		<cnpjadm>62285390000140</cnpjadm>
+		<nomegestor>M8 PARTNERS GESTORA DE RECURSOS LTD</nomegestor>
+		<cnpjgestor>18038439000179</cnpjgestor>
+		<nomecustodiante>SINGULARE CTVM SA</nomecustodiante>
+		<cnpjcustodiante>62285390000140</cnpjcustodiante>
+		<valorcota>1270.811830000</valorcota>
+		<quantidade>30000.000000000</quantidade>
+		<patliq>38124354.90</patliq>
+		<valorativos>38124354.90</valorativos>
+		<valorreceber>0.00</valorreceber>
+		<valorpagar>0.00</valorpagar>
+		<vlcotasemitir>0.00</vlcotasemitir>
+		<vlcotasresgatar>0.00</vlcotasresgatar>
+		<codanbid>659762</codanbid>
+		<tipofundo>278</tipofundo>
+		<nivelrsc></nivelrsc>
+	</header>
+	<caixa>
+		<isininstituicao>******</isininstituicao>
+		<tpconta>D</tpconta>
+		<saldo>0.00</saldo>
+		<nivelrsc>BB</nivelrsc>
+	</caixa>
+	<fidc>
+		<valorfinanceiro>38124354.90</valorfinanceiro>
+	</fidc>
+</fundo>
+
+</arquivoposicao_4_01>

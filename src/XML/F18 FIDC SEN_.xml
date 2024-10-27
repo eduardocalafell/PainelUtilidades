@@ -1,0 +1,38 @@
+<?xml version='1.0'?>
+
+<arquivoposicao_4_01><fundo>
+	<header>
+		<isin>BR0H3ZCTF011</isin>
+		<cnpj>52259591000110</cnpj>
+		<nome>F18 FIDC - SENIOR</nome>
+		<dtposicao>20241023</dtposicao>
+		<nomeadm>SINGULARE CTVM S A</nomeadm>
+		<cnpjadm>62285390000140</cnpjadm>
+		<nomegestor>M8 PARTNERS GESTORA DE RECURSOS LTD</nomegestor>
+		<cnpjgestor>18038439000179</cnpjgestor>
+		<nomecustodiante>SINGULARE CTVM SA</nomecustodiante>
+		<cnpjcustodiante>62285390000140</cnpjcustodiante>
+		<valorcota>1152.976070670</valorcota>
+		<quantidade>24529.020514220</quantidade>
+		<patliq>28281373.69</patliq>
+		<valorativos>28281373.69</valorativos>
+		<valorreceber>0.00</valorreceber>
+		<valorpagar>0.00</valorpagar>
+		<vlcotasemitir>0.00</vlcotasemitir>
+		<vlcotasresgatar>0.00</vlcotasresgatar>
+		<codanbid>731226</codanbid>
+		<tipofundo>278</tipofundo>
+		<nivelrsc></nivelrsc>
+	</header>
+	<caixa>
+		<isininstituicao>******</isininstituicao>
+		<tpconta>D</tpconta>
+		<saldo>0.00</saldo>
+		<nivelrsc>BB</nivelrsc>
+	</caixa>
+	<fidc>
+		<valorfinanceiro>28281373.69</valorfinanceiro>
+	</fidc>
+</fundo>
+
+</arquivoposicao_4_01>

@@ -34,5 +34,17 @@ namespace WebApi.Controllers
             var ret = _utilidadesService.ConsultarListaCnpj();
             return Ok(ret);
         }
+
+        /// <summary>
+        /// Recupera os XMLs de todos os fundos cadastrados.
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("RecuperarXmlAnbima")]
+        [ProducesResponseType(200), ProducesResponseType(500)]
+        public IActionResult RecuperarXmlAnbima()
+        {
+            var ret = _utilidadesService.RecuperarXmlAnbima();
+            return Ok(ret);
+        }
     }
 }
