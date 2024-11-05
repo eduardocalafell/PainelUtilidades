@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ConsultaCnpjReceita")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f8efe6dcf84ca5161835504f5554415228f2ff84")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0a4d254168f0a5d0c54265152b0ead4977bb9bdb")]
 [assembly: System.Reflection.AssemblyProductAttribute("ConsultaCnpjReceita")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ConsultaCnpjReceita")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

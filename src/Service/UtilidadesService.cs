@@ -13,6 +13,7 @@ namespace ConsultaCnpjReceita.Service;
 public class UtilidadesService
 {
     private readonly AppDbContext _context;
+    private static readonly object _logLock = new object();
     private IConfiguration Configuration { get; set; }
 
     public UtilidadesService(AppDbContext context)
@@ -82,7 +83,13 @@ public class UtilidadesService
         return listaRetorno;
     }
 
-    public string RecuperarXmlAnbima()
+    public async Task<string> IniciarRecuperacaoXmlAnbimaAsync()
+    {
+        await Task.Run(() => RecuperarXmlAnbima());
+        return "A operação de recuperação do XML foi iniciada com sucesso!";
+    }
+
+    private async Task RecuperarXmlAnbima()
     {
         var url = Configuration.GetSection("Singulare:Url").Value;
         var user = Configuration.GetSection("Singulare:Usuario").Value;
@@ -94,22 +101,22 @@ public class UtilidadesService
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{pswr}")));
 
         // Autenticação
-        var response = client.PostAsync(url + "painel/token/api", null).Result;
+        var response = await client.PostAsync(url + "painel/token/api", null);
         var authToken = JsonConvert.DeserializeObject<SingulareApiAuthResponse>(response.Content.ReadAsStringAsync().Result).Token;
 
         // Recupera XML
         client.DefaultRequestHeaders.Authorization = null;
         client.DefaultRequestHeaders.Add("x-api-key", authToken);
 
-        listaFidcs.ForEach(f =>
+        listaFidcs.ForEach(async f =>
         {
             var retry = 0;
             do
             {
-                response = client.GetAsync(url + $"netreport/report/xml-anbima/{f}").Result;
+                response = await client.GetAsync(url + $"netreport/report/xml-anbima/{f}");
                 if (response.IsSuccessStatusCode)
                 {
-                    var ret = response.Content.ReadAsStringAsync().Result;
+                    var ret = await response.Content.ReadAsStringAsync();
                     XmlSerializer serializer = new XmlSerializer(typeof(ArquivoPosicao));
                     using (StringReader reader = new StringReader(ret))
                     {
@@ -156,45 +163,50 @@ public class UtilidadesService
                             }
                             else
                             {
-                                StreamWriter log = new($"{Environment.CurrentDirectory}/.log", append: true);
-                                log.WriteLine($"[{DateTime.Now:s}] Posição do dia {DateTime.Parse(xmlAmbimaModel.DataPosicao.Substring(0, 4) + "-" + xmlAmbimaModel.DataPosicao.Substring(4, 2) + "-" + xmlAmbimaModel.DataPosicao.Substring(6, 2), CultureInfo.GetCultureInfo("pt-BR")):dd/MM/yyyy} para o CNPJ {xmlAmbimaModel.Cnpj} - {xmlAmbimaModel.Nome} já recuperado.");
-                                log.Close();
+                                EscreverLog($"Posição do dia {DateTime.Parse(xmlAmbimaModel.DataPosicao.Substring(0, 4) + "-" + xmlAmbimaModel.DataPosicao.Substring(4, 2) + "-" + xmlAmbimaModel.DataPosicao.Substring(6, 2), CultureInfo.GetCultureInfo("pt-BR")):dd/MM/yyyy} para o CNPJ {xmlAmbimaModel.Cnpj} - {xmlAmbimaModel.Nome} já recuperado.");
                             }
                         }
                         else
                         {
-                            StreamWriter log = new($"{Environment.CurrentDirectory}/.log", append: true);
-                            log.WriteLine($"[{DateTime.Now:s}] Posição do fundo {f} não encontrado.");
-                            log.Close();
+                            EscreverLog($"Posição do fundo {f} não encontrado.");
                         }
                     }
                     break;
                 }
                 else
                 {
-                    StreamWriter log = new($"{Environment.CurrentDirectory}/.log", append: true);
-                    if (retry < 2)
+                    retry++;
+
+                    if (retry <= 2)
                     {
-                        log.WriteLine($"[{DateTime.Now:s}] Erro ao recuperar XML do fundo {f}. Tentativa {retry + 1}");
+                        EscreverLog($"Erro ao recuperar XML do fundo {f}. Tentativa {retry}");
+                        await Task.Delay(5000);
                     }
                     else
                     {
-                        log.WriteLine($"[{DateTime.Now:s}] Tentativas excedidas ao recuperar XML do fundo {f}.");
+                        EscreverLog($"Tentativas excedidas ao recuperar XML do fundo {f}.");
                     }
-                    log.Close();
-                    retry++;
-                    Thread.Sleep(60000);
                 }
-            } while (!response.IsSuccessStatusCode && retry < 2);
+            } while (!response.IsSuccessStatusCode && retry <= 2);
         });
-
-        return "XMLs recuperados com sucesso!";
     }
 
     private static string FormatarCnpj(string cnpj)
     {
         var r = new Regex("[^0-9a-zA-Z]+");
         return r.Replace(cnpj, "");
+    }
+
+    private static void EscreverLog(string mensagem)
+    {
+        lock (_logLock)
+        {
+            using (StreamWriter log = new StreamWriter($"{Environment.CurrentDirectory}/.log", append: true))
+            {
+                log.WriteLine($"[{DateTime.Now:s}] {mensagem}");
+                log.Close();
+            }
+        }
     }
 
     private List<string> RecuperarFidcs()

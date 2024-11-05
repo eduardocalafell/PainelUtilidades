@@ -41,9 +41,9 @@ namespace WebApi.Controllers
         /// <returns></returns>
         [HttpGet("RecuperarXmlAnbima")]
         [ProducesResponseType(200), ProducesResponseType(500)]
-        public IActionResult RecuperarXmlAnbima()
+        public async Task<IActionResult> RecuperarXmlAnbima()
         {
-            var ret = _utilidadesService.RecuperarXmlAnbima();
+            var ret = await _utilidadesService.IniciarRecuperacaoXmlAnbimaAsync();
             return Ok(ret);
         }
     }
