@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("LocalHost");
+var connectionString = builder.Configuration.GetConnectionString("M8Dev");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString),
     ServiceLifetime.Scoped);
@@ -23,8 +23,8 @@ builder.Services.AddCors(p => p.AddPolicy("corsapp", builder =>
 
 builder.Services.AddSwaggerGen(c =>
 {
-    string ambientName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development" ? "Desenvolvimento" : "Produção"; 
-    
+    string ambientName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development" ? "Desenvolvimento" : "Produção";
+
     c.SwaggerDoc("v1", new()
     {
         Title = $"Painel de Utilidades (.NET 8.0) - Ambiente de {ambientName}",
