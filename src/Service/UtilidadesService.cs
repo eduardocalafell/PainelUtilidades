@@ -7,18 +7,21 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Xml.Serialization;
 using System.Globalization;
+using System.Xml;
 
 namespace ConsultaCnpjReceita.Service;
 
 public class UtilidadesService
 {
     private readonly AppDbContext _context;
+    private readonly IServiceProvider _serviceProvider;
     private static readonly object _logLock = new object();
     private IConfiguration Configuration { get; set; }
 
-    public UtilidadesService(AppDbContext context)
+    public UtilidadesService(AppDbContext context, IServiceProvider serviceProvider)
     {
         _context = context;
+        _serviceProvider = serviceProvider;
 
         Configuration = new ConfigurationBuilder()
                     .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
@@ -91,105 +94,116 @@ public class UtilidadesService
 
     private async Task RecuperarXmlAnbima()
     {
-        var url = Configuration.GetSection("Singulare:Url").Value;
-        var user = Configuration.GetSection("Singulare:Usuario").Value;
-        var pswr = Configuration.GetSection("Singulare:Senha").Value;
-        var xmlExistentes = _context.tb_aux_Xml_Anbima.ToList();
-        var listaFidcs = RecuperarFidcs();
-
-        HttpClient client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{pswr}")));
-
-        // Autenticação
-        var response = await client.PostAsync(url + "painel/token/api", null);
-        var authToken = JsonConvert.DeserializeObject<SingulareApiAuthResponse>(response.Content.ReadAsStringAsync().Result).Token;
-
-        // Recupera XML
-        client.DefaultRequestHeaders.Authorization = null;
-        client.DefaultRequestHeaders.Add("x-api-key", authToken);
-
-        listaFidcs.ForEach(async f =>
+        using (var scope = _serviceProvider.CreateScope())
         {
-            var retry = 0;
-            do
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var url = Configuration.GetSection("Singulare:Url").Value;
+            var user = Configuration.GetSection("Singulare:Usuario").Value;
+            var pswr = Configuration.GetSection("Singulare:Senha").Value;
+            var xmlExistentes = context.tb_aux_Xml_Anbima.ToList();
+            var listaFidcs = RecuperarFidcs();
+
+            HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{pswr}")));
+
+            var response = await client.PostAsync(url + "painel/token/api", null);
+            var authToken = JsonConvert.DeserializeObject<SingulareApiAuthResponse>(response.Content.ReadAsStringAsync().Result).Token;
+
+            client.DefaultRequestHeaders.Authorization = null;
+            client.DefaultRequestHeaders.Add("x-api-key", authToken);
+
+            listaFidcs.ForEach(async f =>
             {
-                response = await client.GetAsync(url + $"netreport/report/xml-anbima/{f}");
-                if (response.IsSuccessStatusCode)
+                var retry = 0;
+                do
                 {
-                    var ret = await response.Content.ReadAsStringAsync();
-                    XmlSerializer serializer = new XmlSerializer(typeof(ArquivoPosicao));
-                    using (StringReader reader = new StringReader(ret))
+                    response = await client.GetAsync(url + $"netreport/report/xml-anbima/{f}");
+                    if (response.IsSuccessStatusCode)
                     {
-                        ArquivoPosicao arquivoPosicao = (ArquivoPosicao)serializer.Deserialize(reader);
-
-                        if (arquivoPosicao.Fundo is not null)
+                        var ret = response.Content.ReadAsStringAsync().Result;
+                        XmlSerializer serializer = new XmlSerializer(typeof(ArquivoPosicao));
+                        using StringReader reader = new StringReader(ret);
+                        try
                         {
-                            XmlAmbimaModel xmlAmbimaModel = new XmlAmbimaModel
-                            {
-                                Isin = arquivoPosicao.Fundo?.Header?.Isin ?? string.Empty,
-                                Cnpj = arquivoPosicao.Fundo?.Header?.Cnpj ?? string.Empty,
-                                Nome = arquivoPosicao.Fundo?.Header?.Nome ?? string.Empty,
-                                DataPosicao = arquivoPosicao.Fundo?.Header?.DataPosicao ?? string.Empty,
-                                NomeAdm = arquivoPosicao.Fundo?.Header?.NomeAdm ?? string.Empty,
-                                CnpjAdm = arquivoPosicao.Fundo?.Header?.CnpjAdm ?? string.Empty,
-                                NomeGestor = arquivoPosicao.Fundo?.Header?.NomeGestor ?? string.Empty,
-                                CnpjGestor = arquivoPosicao.Fundo?.Header?.CnpjGestor ?? string.Empty,
-                                NomeCustodiante = arquivoPosicao.Fundo?.Header?.NomeCustodiante ?? string.Empty,
-                                CnpjCustodiante = arquivoPosicao.Fundo?.Header?.CnpjCustodiante ?? string.Empty,
-                                ValorCota = arquivoPosicao.Fundo?.Header?.ValorCota ?? 0,
-                                Quantidade = arquivoPosicao.Fundo?.Header?.Quantidade ?? 0,
-                                PatrimonioLiquido = arquivoPosicao.Fundo?.Header?.PatrimonioLiquido ?? 0,
-                                ValorAtivos = arquivoPosicao.Fundo?.Header?.ValorAtivos ?? 0,
-                                ValorReceber = arquivoPosicao.Fundo?.Header?.ValorReceber ?? 0,
-                                ValorPagar = arquivoPosicao.Fundo?.Header?.ValorPagar ?? 0,
-                                VlCotasEmitir = arquivoPosicao.Fundo?.Header?.VlCotasEmitir ?? 0,
-                                VlCotasResgatar = arquivoPosicao.Fundo?.Header?.VlCotasResgatar ?? 0,
-                                CodAnbid = arquivoPosicao.Fundo?.Header?.CodAnbid ?? 0,
-                                TipoFundo = arquivoPosicao.Fundo?.Header?.TipoFundo ?? 0,
-                                NivelRsc = arquivoPosicao.Fundo?.Header?.NivelRsc ?? string.Empty,
-                                TipoConta = arquivoPosicao.Fundo?.Caixa?.TipoConta ?? string.Empty,
-                                Saldo = arquivoPosicao.Fundo?.Caixa?.Saldo ?? 0,
-                                ValorFinanceiro = arquivoPosicao.Fundo?.FIDC?.ValorFinanceiro ?? 0,
-                                CodProv = arquivoPosicao.Fundo?.Provisao?.CodProv ?? 0,
-                                CreDebProv = arquivoPosicao.Fundo?.Provisao?.CreDeb ?? string.Empty,
-                                DataProv = arquivoPosicao.Fundo?.Provisao?.Data ?? string.Empty,
-                                ValorProv = arquivoPosicao.Fundo?.Provisao?.Valor ?? 0
-                            };
+                            ArquivoPosicao arquivoPosicao = (ArquivoPosicao)serializer.Deserialize(reader);
 
-                            if (xmlExistentes.FirstOrDefault(x => x.DataPosicao == xmlAmbimaModel.DataPosicao && x.Nome == xmlAmbimaModel.Nome)! == null)
+                            if (arquivoPosicao.Fundo is not null)
                             {
-                                _context.tb_aux_Xml_Anbima.Add(xmlAmbimaModel);
-                                _context.SaveChanges();
+                                XmlAmbimaModel xmlAmbimaModel = new XmlAmbimaModel
+                                {
+                                    Isin = arquivoPosicao.Fundo?.Header?.Isin ?? string.Empty,
+                                    Cnpj = arquivoPosicao.Fundo?.Header?.Cnpj ?? string.Empty,
+                                    Nome = arquivoPosicao.Fundo?.Header?.Nome ?? string.Empty,
+                                    DataPosicao = arquivoPosicao.Fundo?.Header?.DataPosicao ?? string.Empty,
+                                    NomeAdm = arquivoPosicao.Fundo?.Header?.NomeAdm ?? string.Empty,
+                                    CnpjAdm = arquivoPosicao.Fundo?.Header?.CnpjAdm ?? string.Empty,
+                                    NomeGestor = arquivoPosicao.Fundo?.Header?.NomeGestor ?? string.Empty,
+                                    CnpjGestor = arquivoPosicao.Fundo?.Header?.CnpjGestor ?? string.Empty,
+                                    NomeCustodiante = arquivoPosicao.Fundo?.Header?.NomeCustodiante ?? string.Empty,
+                                    CnpjCustodiante = arquivoPosicao.Fundo?.Header?.CnpjCustodiante ?? string.Empty,
+                                    ValorCota = arquivoPosicao.Fundo?.Header?.ValorCota ?? 0,
+                                    Quantidade = arquivoPosicao.Fundo?.Header?.Quantidade ?? 0,
+                                    PatrimonioLiquido = arquivoPosicao.Fundo?.Header?.PatrimonioLiquido ?? 0,
+                                    ValorAtivos = arquivoPosicao.Fundo?.Header?.ValorAtivos ?? 0,
+                                    ValorReceber = arquivoPosicao.Fundo?.Header?.ValorReceber ?? 0,
+                                    ValorPagar = arquivoPosicao.Fundo?.Header?.ValorPagar ?? 0,
+                                    VlCotasEmitir = arquivoPosicao.Fundo?.Header?.VlCotasEmitir ?? 0,
+                                    VlCotasResgatar = arquivoPosicao.Fundo?.Header?.VlCotasResgatar ?? 0,
+                                    CodAnbid = arquivoPosicao.Fundo?.Header?.CodAnbid ?? 0,
+                                    TipoFundo = arquivoPosicao.Fundo?.Header?.TipoFundo ?? 0,
+                                    NivelRsc = arquivoPosicao.Fundo?.Header?.NivelRsc ?? string.Empty,
+                                    TipoConta = arquivoPosicao.Fundo?.Caixa?.TipoConta ?? string.Empty,
+                                    Saldo = arquivoPosicao.Fundo?.Caixa?.Saldo ?? 0,
+                                    ValorFinanceiro = arquivoPosicao.Fundo?.FIDC?.ValorFinanceiro ?? 0,
+                                    CodProv = arquivoPosicao.Fundo?.Provisao?.CodProv ?? 0,
+                                    CreDebProv = arquivoPosicao.Fundo?.Provisao?.CreDeb ?? string.Empty,
+                                    DataProv = arquivoPosicao.Fundo?.Provisao?.Data ?? string.Empty,
+                                    ValorProv = arquivoPosicao.Fundo?.Provisao?.Valor ?? 0
+                                };
+
+
+                                if (xmlExistentes.FirstOrDefault(x => x.DataPosicao == xmlAmbimaModel.DataPosicao && x.Nome == xmlAmbimaModel.Nome) == null)
+                                {
+                                    EscreverLog($"Posição do fundo {f} recuperado e salvo com sucesso!");
+                                    //File.WriteAllText($"{Directory.GetCurrentDirectory()}/src/XML/{f}.xml", ret);
+                                    await context.tb_aux_Xml_Anbima.AddAsync(xmlAmbimaModel);
+                                    await context.SaveChangesAsync();
+                                }
+                                else
+                                {
+                                    EscreverLog($"Posição do dia {DateTime.Parse(xmlAmbimaModel.DataPosicao.Substring(0, 4) + "-" + xmlAmbimaModel.DataPosicao.Substring(4, 2) + "-" + xmlAmbimaModel.DataPosicao.Substring(6, 2), CultureInfo.GetCultureInfo("pt-BR")):dd/MM/yyyy} para o CNPJ {xmlAmbimaModel.Cnpj} - {xmlAmbimaModel.Nome} já recuperado.");
+                                }
                             }
                             else
                             {
-                                EscreverLog($"Posição do dia {DateTime.Parse(xmlAmbimaModel.DataPosicao.Substring(0, 4) + "-" + xmlAmbimaModel.DataPosicao.Substring(4, 2) + "-" + xmlAmbimaModel.DataPosicao.Substring(6, 2), CultureInfo.GetCultureInfo("pt-BR")):dd/MM/yyyy} para o CNPJ {xmlAmbimaModel.Cnpj} - {xmlAmbimaModel.Nome} já recuperado.");
+                                EscreverLog($"Posição do fundo {f} não encontrado.");
                             }
-                        }
-                        else
-                        {
-                            EscreverLog($"Posição do fundo {f} não encontrado.");
-                        }
-                    }
-                    break;
-                }
-                else
-                {
-                    retry++;
 
-                    if (retry <= 2)
-                    {
-                        EscreverLog($"Erro ao recuperar XML do fundo {f}. Tentativa {retry}");
-                        await Task.Delay(5000);
+                        }
+                        catch
+                        {
+                        }
+                        break;
                     }
                     else
                     {
-                        EscreverLog($"Tentativas excedidas ao recuperar XML do fundo {f}.");
+                        retry++;
+                        await Task.Delay(3000);
+                        if (retry <= 5)
+                        {
+                            EscreverLog($"Erro ao recuperar XML do fundo {f}. Tentativa {retry}");
+                        }
+                        else
+                        {
+                            EscreverLog($"Tentativas excedidas ao recuperar XML do fundo {f}.");
+                        }
                     }
-                }
-            } while (!response.IsSuccessStatusCode && retry <= 2);
-        });
+                } while (!response.IsSuccessStatusCode && retry <= 5);
+            });
+        }
     }
+
 
     private static string FormatarCnpj(string cnpj)
     {
@@ -294,7 +308,8 @@ public class UtilidadesService
             "SUPER BOX MEZ",
             "SUPER BOX SEN",
             "TMOV FIDC",
-            "TMOV FIDC SR"
+            "TMOV FIDC SR",
+            "PUMA FIDC SUB",
         ];
     }
 }

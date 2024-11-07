@@ -61,7 +61,7 @@ namespace ConsultaCnpjReceita.Model
         public Header Header { get; set; }
 
         [XmlElement(ElementName = "outrasdespesas")]
-        public List<OutrasDespesas> OutrasDespesas { get; set; }
+        public List<OutrasDespesas>? OutrasDespesas { get; set; }
 
         [XmlElement(ElementName = "caixa")]
         public Caixa Caixa { get; set; }

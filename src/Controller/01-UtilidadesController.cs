@@ -15,12 +15,14 @@ namespace WebApi.Controllers
     {
 
         private readonly AppDbContext _context;
+        private readonly IServiceProvider _serviceProvider;
         private readonly UtilidadesService _utilidadesService;
 
-        public UtilidadesController(AppDbContext context)
+        public UtilidadesController(AppDbContext context, IServiceProvider serviceProvider)
         {
             _context = context;
-            _utilidadesService = new UtilidadesService(context);
+            _serviceProvider = serviceProvider;
+            _utilidadesService = new UtilidadesService(_context, _serviceProvider);
         }
 
         /// <summary>
