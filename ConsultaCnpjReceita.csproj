@@ -25,10 +25,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="**\*.log">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
+    <Folder Include="\*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update=".log">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
