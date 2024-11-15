@@ -29,24 +29,36 @@ namespace WebApi.Controllers
         /// Consulta a lista de CNPJs armazenados no banco de dados.
         /// </summary>
         /// <returns></returns>
-        [HttpGet("ConsultarListaCnpj")]
-        [ProducesResponseType(200), ProducesResponseType(500)]
-        public async Task<IActionResult> ConsultarListaCnpj()
+        [HttpPost("ConsultarListaCnpj")]
+        [ProducesResponseType(202), ProducesResponseType(400)]
+        public IActionResult ConsultarListaCnpj()
         {
-            var ret = await _utilidadesService.IniciarConsultarListaCnpj();
-            return Ok(ret);
+            Task.Run(async () =>
+            {
+                // Execute a lógica longa aqui
+                await _utilidadesService.IniciarConsultarListaCnpj();
+            });
+
+            // Retorne 202 Accepted imediatamente sem caracteres especiais
+            return Accepted(new { message = "Request accepted and is being processed in the background." });
         }
 
         /// <summary>
         /// Recupera os XMLs de todos os fundos cadastrados.
         /// </summary>
         /// <returns></returns>
-        [HttpGet("RecuperarXmlAnbima")]
-        [ProducesResponseType(200), ProducesResponseType(500)]
-        public async Task<IActionResult> RecuperarXmlAnbima()
+        [HttpPost("RecuperarXmlAnbima")]
+        [ProducesResponseType(202), ProducesResponseType(400)]
+        public IActionResult RecuperarXmlAnbima()
         {
-            var ret = await _utilidadesService.IniciarRecuperacaoXmlAnbimaAsync();
-            return Ok(ret);
+            Task.Run(async () =>
+            {
+                // Execute a lógica longa aqui
+                await _utilidadesService.IniciarRecuperacaoXmlAnbimaAsync();
+            });
+
+            // Retorne 202 Accepted imediatamente sem caracteres especiais
+            return Accepted(new { message = "Request accepted and is being processed in the background." });
         }
     }
 }

@@ -9,6 +9,7 @@ using System.Xml.Serialization;
 using System.Globalization;
 using System.Xml;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace ConsultaCnpjReceita.Service;
 
@@ -40,131 +41,136 @@ public class UtilidadesService
     {
         var listaCnpjConsulta = new List<string>();
 
-        // Finaxis Estoque
-        var ListaEstoqueFinaxis = await _context.tb_stg_estoque_finaxis_full.Select(x => new CnpjModelDTO
+        using (var scope = _serviceProvider.CreateScope())
         {
-            CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
-            CnpjCedente = FormatarCnpj(x.CnpjCedente),
-            CnpjSacado = FormatarCnpj(x.CnpjSacado),
-        }).ToListAsync();
+            var scopedContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        ListaEstoqueFinaxis.ForEach(f =>
-        {
-            listaCnpjConsulta.Add(f.CnpjOriginador);
-            listaCnpjConsulta.Add(f.CnpjCedente);
-            listaCnpjConsulta.Add(f.CnpjSacado);
-        });
-        // Fim Finaxis Estoque
-
-        // Hemera Estoque
-        var ListaEstoqueHemera = await _context.tb_stg_estoque_hemera_full.Select(x => new CnpjModelDTO
-        {
-            CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
-            CnpjCedente = FormatarCnpj(x.CnpjCedente),
-            CnpjSacado = FormatarCnpj(x.CnpjSacado),
-        }).ToListAsync();
-
-        ListaEstoqueHemera.ForEach(f =>
-        {
-            listaCnpjConsulta.Add(f.CnpjOriginador);
-            listaCnpjConsulta.Add(f.CnpjCedente);
-            listaCnpjConsulta.Add(f.CnpjSacado);
-        });
-        // Fim Hemera Estoque
-
-        // Singulare Estoque
-        var ListaEstoqueSingulare = await _context.tb_stg_estoque_singulare_full.Select(x => new CnpjModelDTO
-        {
-            CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
-            CnpjCedente = FormatarCnpj(x.CnpjCedente),
-            CnpjSacado = FormatarCnpj(x.CnpjSacado),
-        }).ToListAsync();
-
-        ListaEstoqueSingulare.ForEach(f =>
-        {
-            listaCnpjConsulta.Add(f.CnpjOriginador);
-            listaCnpjConsulta.Add(f.CnpjCedente);
-            listaCnpjConsulta.Add(f.CnpjSacado);
-        });
-        // Fim Singulare Estoque
-
-        // Hemera Liquidados
-        var ListaLiquidadosHemera = await _context.tb_stg_estoque_singulare_full.Select(x => new CnpjModelDTO
-        {
-            CnpjCedente = FormatarCnpj(x.CnpjCedente),
-            CnpjSacado = FormatarCnpj(x.CnpjSacado),
-        }).ToListAsync();
-
-        ListaLiquidadosHemera.ForEach(f =>
-        {
-            listaCnpjConsulta.Add(f.CnpjCedente);
-            listaCnpjConsulta.Add(f.CnpjSacado);
-        });
-        // Fim Hemera Liquidados
-
-        // Finaxis Liquidados
-        var ListaLiquidadosFinaxis = await _context.tb_stg_liquidados_finaxis_full.Select(x => new CnpjModelDTO
-        {
-            CnpjCedente = FormatarCnpj(x.CnpjCedente),
-            CnpjSacado = FormatarCnpj(x.CnpjSacado),
-        }).ToListAsync();
-
-        ListaLiquidadosFinaxis.ForEach(f =>
-        {
-            listaCnpjConsulta.Add(f.CnpjCedente);
-            listaCnpjConsulta.Add(f.CnpjSacado);
-        });
-        // Fim Finaxis Liquidados
-
-        // Finaxis Liquidados Recompra Hemera
-        var ListaLiquidadosRecompraHemera = await _context.tb_stg_liquidados_recompra_hemera_full.Select(x => new CnpjModelDTO
-        {
-            CnpjCedente = FormatarCnpj(x.CnpjCedente),
-            CnpjSacado = FormatarCnpj(x.CnpjSacado),
-        }).ToListAsync();
-
-        ListaLiquidadosRecompraHemera.ForEach(f =>
-        {
-            listaCnpjConsulta.Add(f.CnpjCedente);
-            listaCnpjConsulta.Add(f.CnpjSacado);
-        });
-        // Fim Hemera Liquidados Recompra
-
-        // Singulare Liquidados
-        var ListaLiquidadosSingulare = await _context.tb_stg_liquidados_singulare_full.Select(x => new CnpjModelDTO
-        {
-            CnpjCedente = FormatarCnpj(x.CnpjCedente),
-            CnpjSacado = FormatarCnpj(x.CnpjSacado),
-        }).ToListAsync();
-
-        ListaLiquidadosSingulare.ForEach(f =>
-        {
-            listaCnpjConsulta.Add(f.CnpjCedente);
-            listaCnpjConsulta.Add(f.CnpjSacado);
-        });
-        // Fim Singulare Liquidados
-
-        var url = Configuration.GetSection("ReceitaWs:Url").Value;
-        HttpClient client = new HttpClient();
-
-        var listaCnpjExistente = await _context.tb_aux_Retorno_Receita.Select(x => FormatarCnpj(x.cnpj)).ToListAsync();
-
-        foreach (var item in listaCnpjConsulta)
-        {
-            var response = await client.GetAsync($"{url}{item}");
-            if (response.IsSuccessStatusCode && !listaCnpjExistente.Contains(item))
+            // Finaxis Estoque
+            var ListaEstoqueFinaxis = await scopedContext.tb_stg_estoque_finaxis_full.Select(x => new CnpjModelDTO
             {
-                var json = await response.Content.ReadAsStringAsync();
-                var retorno = JsonConvert.DeserializeObject<Root>(json);
-                if (retorno.cnpj is not null)
-                {
-                    listaCnpjExistente.Add(item);
-                    await _context.tb_aux_Retorno_Receita.AddAsync(retorno);
-                    await _context.SaveChangesAsync();
-                }
-            }
+                CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
+                CnpjCedente = FormatarCnpj(x.CnpjCedente),
+                CnpjSacado = FormatarCnpj(x.CnpjSacado),
+            }).ToListAsync();
 
-            await Task.Delay(20500);
+            ListaEstoqueFinaxis.ForEach(f =>
+            {
+                listaCnpjConsulta.Add(f.CnpjOriginador);
+                listaCnpjConsulta.Add(f.CnpjCedente);
+                listaCnpjConsulta.Add(f.CnpjSacado);
+            });
+            // Fim Finaxis Estoque
+
+            // Hemera Estoque
+            var ListaEstoqueHemera = await scopedContext.tb_stg_estoque_hemera_full.Select(x => new CnpjModelDTO
+            {
+                CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
+                CnpjCedente = FormatarCnpj(x.CnpjCedente),
+                CnpjSacado = FormatarCnpj(x.CnpjSacado),
+            }).ToListAsync();
+
+            ListaEstoqueHemera.ForEach(f =>
+            {
+                listaCnpjConsulta.Add(f.CnpjOriginador);
+                listaCnpjConsulta.Add(f.CnpjCedente);
+                listaCnpjConsulta.Add(f.CnpjSacado);
+            });
+            // Fim Hemera Estoque
+
+            // Singulare Estoque
+            var ListaEstoqueSingulare = await scopedContext.tb_stg_estoque_singulare_full.Select(x => new CnpjModelDTO
+            {
+                CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
+                CnpjCedente = FormatarCnpj(x.CnpjCedente),
+                CnpjSacado = FormatarCnpj(x.CnpjSacado),
+            }).ToListAsync();
+
+            ListaEstoqueSingulare.ForEach(f =>
+            {
+                listaCnpjConsulta.Add(f.CnpjOriginador);
+                listaCnpjConsulta.Add(f.CnpjCedente);
+                listaCnpjConsulta.Add(f.CnpjSacado);
+            });
+            // Fim Singulare Estoque
+
+            // Hemera Liquidados
+            var ListaLiquidadosHemera = await scopedContext.tb_stg_estoque_singulare_full.Select(x => new CnpjModelDTO
+            {
+                CnpjCedente = FormatarCnpj(x.CnpjCedente),
+                CnpjSacado = FormatarCnpj(x.CnpjSacado),
+            }).ToListAsync();
+
+            ListaLiquidadosHemera.ForEach(f =>
+            {
+                listaCnpjConsulta.Add(f.CnpjCedente);
+                listaCnpjConsulta.Add(f.CnpjSacado);
+            });
+            // Fim Hemera Liquidados
+
+            // Finaxis Liquidados
+            var ListaLiquidadosFinaxis = await scopedContext.tb_stg_liquidados_finaxis_full.Select(x => new CnpjModelDTO
+            {
+                CnpjCedente = FormatarCnpj(x.CnpjCedente),
+                CnpjSacado = FormatarCnpj(x.CnpjSacado),
+            }).ToListAsync();
+
+            ListaLiquidadosFinaxis.ForEach(f =>
+            {
+                listaCnpjConsulta.Add(f.CnpjCedente);
+                listaCnpjConsulta.Add(f.CnpjSacado);
+            });
+            // Fim Finaxis Liquidados
+
+            // Finaxis Liquidados Recompra Hemera
+            var ListaLiquidadosRecompraHemera = await scopedContext.tb_stg_liquidados_recompra_hemera_full.Select(x => new CnpjModelDTO
+            {
+                CnpjCedente = FormatarCnpj(x.CnpjCedente),
+                CnpjSacado = FormatarCnpj(x.CnpjSacado),
+            }).ToListAsync();
+
+            ListaLiquidadosRecompraHemera.ForEach(f =>
+            {
+                listaCnpjConsulta.Add(f.CnpjCedente);
+                listaCnpjConsulta.Add(f.CnpjSacado);
+            });
+            // Fim Hemera Liquidados Recompra
+
+            // Singulare Liquidados
+            var ListaLiquidadosSingulare = await scopedContext.tb_stg_liquidados_singulare_full.Select(x => new CnpjModelDTO
+            {
+                CnpjCedente = FormatarCnpj(x.CnpjCedente),
+                CnpjSacado = FormatarCnpj(x.CnpjSacado),
+            }).ToListAsync();
+
+            ListaLiquidadosSingulare.ForEach(f =>
+            {
+                listaCnpjConsulta.Add(f.CnpjCedente);
+                listaCnpjConsulta.Add(f.CnpjSacado);
+            });
+            // Fim Singulare Liquidados
+
+            var url = Configuration.GetSection("ReceitaWs:Url").Value;
+            HttpClient client = new HttpClient();
+
+            var listaCnpjExistente = await scopedContext.tb_aux_Retorno_Receita.Select(x => FormatarCnpj(x.cnpj)).ToListAsync();
+
+            foreach (var item in listaCnpjConsulta)
+            {
+                var response = await client.GetAsync($"{url}{item}");
+                if (response.IsSuccessStatusCode && !listaCnpjExistente.Contains(item))
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    var retorno = JsonConvert.DeserializeObject<Root>(json);
+                    if (retorno.cnpj is not null)
+                    {
+                        listaCnpjExistente.Add(item);
+                        scopedContext.tb_aux_Retorno_Receita.Add(retorno);
+                        scopedContext.SaveChanges();
+                    }
+                }
+
+                await Task.Delay(20500);
+            }
         }
     }
 
@@ -186,16 +192,18 @@ public class UtilidadesService
             var xmlExistentes = context.tb_aux_Xml_Anbima.ToList();
             var listaFidcs = RecuperarFidcs();
 
-            HttpClient client = new HttpClient();
+            Debug.WriteLine("PASSOU AQUI");
+
+            using HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{pswr}")));
 
             var response = await client.PostAsync(url + "painel/token/api", null);
-            var authToken = JsonConvert.DeserializeObject<SingulareApiAuthResponse>(response.Content.ReadAsStringAsync().Result).Token;
+            var authToken = JsonConvert.DeserializeObject<SingulareApiAuthResponse>(await response.Content.ReadAsStringAsync()).Token;
 
             client.DefaultRequestHeaders.Authorization = null;
             client.DefaultRequestHeaders.Add("x-api-key", authToken);
 
-            listaFidcs.ForEach(async f =>
+            foreach (var f in listaFidcs)
             {
                 var retry = 0;
                 do
@@ -203,9 +211,10 @@ public class UtilidadesService
                     response = await client.GetAsync(url + $"netreport/report/xml-anbima/{f}");
                     if (response.IsSuccessStatusCode)
                     {
-                        var ret = response.Content.ReadAsStringAsync().Result;
+                        var ret = await response.Content.ReadAsStringAsync();
                         XmlSerializer serializer = new XmlSerializer(typeof(ArquivoPosicao));
                         using StringReader reader = new StringReader(ret);
+
                         try
                         {
                             ArquivoPosicao arquivoPosicao = (ArquivoPosicao)serializer.Deserialize(reader);
@@ -244,27 +253,16 @@ public class UtilidadesService
                                     ValorProv = arquivoPosicao.Fundo?.Provisao?.Valor ?? 0
                                 };
 
-
                                 if (xmlExistentes.FirstOrDefault(x => x.DataPosicao == xmlAmbimaModel.DataPosicao && x.Nome == xmlAmbimaModel.Nome) == null)
                                 {
-                                    EscreverLog($"Posição do fundo {f} recuperado e salvo com sucesso!");
-                                    //File.WriteAllText($"{Directory.GetCurrentDirectory()}/src/XML/{f}.xml", ret);
                                     await context.tb_aux_Xml_Anbima.AddAsync(xmlAmbimaModel);
                                     await context.SaveChangesAsync();
                                 }
-                                else
-                                {
-                                    EscreverLog($"Posição do dia {DateTime.Parse(xmlAmbimaModel.DataPosicao.Substring(0, 4) + "-" + xmlAmbimaModel.DataPosicao.Substring(4, 2) + "-" + xmlAmbimaModel.DataPosicao.Substring(6, 2), CultureInfo.GetCultureInfo("pt-BR")):dd/MM/yyyy} para o CNPJ {xmlAmbimaModel.Cnpj} - {xmlAmbimaModel.Nome} já recuperado.");
-                                }
                             }
-                            else
-                            {
-                                EscreverLog($"Posição do fundo {f} não encontrado.");
-                            }
-
                         }
                         catch
                         {
+                            // Lidar com erros de desserialização
                         }
                         break;
                     }
@@ -272,18 +270,17 @@ public class UtilidadesService
                     {
                         retry++;
                         await Task.Delay(3000);
-                        if (retry <= 5)
+                        if (retry > 5)
                         {
-                            EscreverLog($"Erro ao recuperar XML do fundo {f}. Tentativa {retry}");
-                        }
-                        else
-                        {
-                            EscreverLog($"Tentativas excedidas ao recuperar XML do fundo {f}.");
+                            // Escrever log de falha após várias tentativas
                         }
                     }
                 } while (!response.IsSuccessStatusCode && retry <= 5);
-            });
+            }
         }
+
+        Debug.WriteLine("ACABOU");
+
     }
 
 
