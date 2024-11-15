@@ -31,9 +31,9 @@ namespace WebApi.Controllers
         /// <returns></returns>
         [HttpGet("ConsultarListaCnpj")]
         [ProducesResponseType(200), ProducesResponseType(500)]
-        public IActionResult ConsultarListaCnpj()
+        public async Task<IActionResult> ConsultarListaCnpj()
         {
-            var ret = _utilidadesService.ConsultarListaCnpj();
+            var ret = await _utilidadesService.IniciarConsultarListaCnpj();
             return Ok(ret);
         }
 

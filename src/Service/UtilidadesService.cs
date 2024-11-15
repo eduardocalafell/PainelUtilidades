@@ -8,6 +8,7 @@ using System.Text;
 using System.Xml.Serialization;
 using System.Globalization;
 using System.Xml;
+using Microsoft.EntityFrameworkCore;
 
 namespace ConsultaCnpjReceita.Service;
 
@@ -29,61 +30,142 @@ public class UtilidadesService
                     .Build();
     }
 
-    public object ConsultarListaCnpj()
+    public async Task<string> IniciarConsultarListaCnpj()
     {
-        List<Root> listaRetorno = new List<Root>();
+        await Task.Run(() => ConsultarListaCnpj());
+        return "Consulta à receita sendo executada...";
+    }
+
+    public async Task ConsultarListaCnpj()
+    {
+        var listaCnpjConsulta = new List<string>();
+
+        // Finaxis Estoque
+        var ListaEstoqueFinaxis = await _context.tb_stg_estoque_finaxis_full.Select(x => new CnpjModelDTO
+        {
+            CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
+            CnpjCedente = FormatarCnpj(x.CnpjCedente),
+            CnpjSacado = FormatarCnpj(x.CnpjSacado),
+        }).ToListAsync();
+
+        ListaEstoqueFinaxis.ForEach(f =>
+        {
+            listaCnpjConsulta.Add(f.CnpjOriginador);
+            listaCnpjConsulta.Add(f.CnpjCedente);
+            listaCnpjConsulta.Add(f.CnpjSacado);
+        });
+        // Fim Finaxis Estoque
+
+        // Hemera Estoque
+        var ListaEstoqueHemera = await _context.tb_stg_estoque_hemera_full.Select(x => new CnpjModelDTO
+        {
+            CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
+            CnpjCedente = FormatarCnpj(x.CnpjCedente),
+            CnpjSacado = FormatarCnpj(x.CnpjSacado),
+        }).ToListAsync();
+
+        ListaEstoqueHemera.ForEach(f =>
+        {
+            listaCnpjConsulta.Add(f.CnpjOriginador);
+            listaCnpjConsulta.Add(f.CnpjCedente);
+            listaCnpjConsulta.Add(f.CnpjSacado);
+        });
+        // Fim Hemera Estoque
+
+        // Singulare Estoque
+        var ListaEstoqueSingulare = await _context.tb_stg_estoque_singulare_full.Select(x => new CnpjModelDTO
+        {
+            CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
+            CnpjCedente = FormatarCnpj(x.CnpjCedente),
+            CnpjSacado = FormatarCnpj(x.CnpjSacado),
+        }).ToListAsync();
+
+        ListaEstoqueSingulare.ForEach(f =>
+        {
+            listaCnpjConsulta.Add(f.CnpjOriginador);
+            listaCnpjConsulta.Add(f.CnpjCedente);
+            listaCnpjConsulta.Add(f.CnpjSacado);
+        });
+        // Fim Singulare Estoque
+
+        // Hemera Liquidados
+        var ListaLiquidadosHemera = await _context.tb_stg_estoque_singulare_full.Select(x => new CnpjModelDTO
+        {
+            CnpjCedente = FormatarCnpj(x.CnpjCedente),
+            CnpjSacado = FormatarCnpj(x.CnpjSacado),
+        }).ToListAsync();
+
+        ListaLiquidadosHemera.ForEach(f =>
+        {
+            listaCnpjConsulta.Add(f.CnpjCedente);
+            listaCnpjConsulta.Add(f.CnpjSacado);
+        });
+        // Fim Hemera Liquidados
+
+        // Finaxis Liquidados
+        var ListaLiquidadosFinaxis = await _context.tb_stg_liquidados_finaxis_full.Select(x => new CnpjModelDTO
+        {
+            CnpjCedente = FormatarCnpj(x.CnpjCedente),
+            CnpjSacado = FormatarCnpj(x.CnpjSacado),
+        }).ToListAsync();
+
+        ListaLiquidadosFinaxis.ForEach(f =>
+        {
+            listaCnpjConsulta.Add(f.CnpjCedente);
+            listaCnpjConsulta.Add(f.CnpjSacado);
+        });
+        // Fim Finaxis Liquidados
+
+        // Finaxis Liquidados Recompra Hemera
+        var ListaLiquidadosRecompraHemera = await _context.tb_stg_liquidados_recompra_hemera_full.Select(x => new CnpjModelDTO
+        {
+            CnpjCedente = FormatarCnpj(x.CnpjCedente),
+            CnpjSacado = FormatarCnpj(x.CnpjSacado),
+        }).ToListAsync();
+
+        ListaLiquidadosRecompraHemera.ForEach(f =>
+        {
+            listaCnpjConsulta.Add(f.CnpjCedente);
+            listaCnpjConsulta.Add(f.CnpjSacado);
+        });
+        // Fim Hemera Liquidados Recompra
+
+        // Singulare Liquidados
+        var ListaLiquidadosSingulare = await _context.tb_stg_liquidados_singulare_full.Select(x => new CnpjModelDTO
+        {
+            CnpjCedente = FormatarCnpj(x.CnpjCedente),
+            CnpjSacado = FormatarCnpj(x.CnpjSacado),
+        }).ToListAsync();
+
+        ListaLiquidadosSingulare.ForEach(f =>
+        {
+            listaCnpjConsulta.Add(f.CnpjCedente);
+            listaCnpjConsulta.Add(f.CnpjSacado);
+        });
+        // Fim Singulare Liquidados
+
         var url = Configuration.GetSection("ReceitaWs:Url").Value;
         HttpClient client = new HttpClient();
 
-        var listaCnpjEstoque = new List<object>();
-        var listaCnpjEstoqueCast = new List<tb_stg_estoque_full>();
-        listaCnpjEstoque.AddRange(_context.tb_stg_estoque_full.ToList());
-        listaCnpjEstoque.AddRange(_context.tb_stg_estoque_full_hemera.ToList());
-        listaCnpjEstoqueCast = listaCnpjEstoque.Cast<tb_stg_estoque_full>().ToList();
-        var listaCnpjExistente = _context.tb_aux_Retorno_Receita.Select(x => FormatarCnpj(x.cnpj)).ToList();
-        var listaCnpjPesquisa = new List<string>();
-        bool houveInclusao = false;
+        var listaCnpjExistente = await _context.tb_aux_Retorno_Receita.Select(x => FormatarCnpj(x.cnpj)).ToListAsync();
 
-        foreach (var item in listaCnpjEstoqueCast)
+        foreach (var item in listaCnpjConsulta)
         {
-            var cnpjCedente = FormatarCnpj(item.DocCedente);
-            var cnpjSacado = FormatarCnpj(item.DocSacado);
-            houveInclusao = false;
-
-            var response = client.GetAsync($"{url}{cnpjCedente}").Result;
-            if (response.IsSuccessStatusCode && !listaCnpjExistente.Contains(cnpjCedente) && !listaCnpjPesquisa.Contains(cnpjCedente))
+            var response = await client.GetAsync($"{url}{item}");
+            if (response.IsSuccessStatusCode && !listaCnpjExistente.Contains(item))
             {
-                var json = response.Content.ReadAsStringAsync().Result;
+                var json = await response.Content.ReadAsStringAsync();
                 var retorno = JsonConvert.DeserializeObject<Root>(json);
                 if (retorno.cnpj is not null)
                 {
-                    listaCnpjPesquisa.Add(cnpjCedente);
-                    _context.tb_aux_Retorno_Receita.Add(retorno);
-                    houveInclusao = true;
+                    listaCnpjExistente.Add(item);
+                    await _context.tb_aux_Retorno_Receita.AddAsync(retorno);
+                    await _context.SaveChangesAsync();
                 }
             }
 
-            response = client.GetAsync($"{url}{cnpjSacado}").Result;
-            if (response.IsSuccessStatusCode && !listaCnpjExistente.Contains(cnpjSacado) && !listaCnpjPesquisa.Contains(cnpjSacado))
-            {
-                var json = response.Content.ReadAsStringAsync().Result;
-                var retorno = JsonConvert.DeserializeObject<Root>(json);
-                if (retorno.cnpj is not null)
-                {
-                    listaCnpjPesquisa.Add(cnpjCedente);
-                    _context.tb_aux_Retorno_Receita.Add(retorno);
-                    houveInclusao = true;
-                }
-            }
-
-            if (houveInclusao)
-            {
-                _context.SaveChanges();
-                Thread.Sleep(60000);
-            }
+            await Task.Delay(20500);
         }
-
-        return listaRetorno;
     }
 
     public async Task<string> IniciarRecuperacaoXmlAnbimaAsync()

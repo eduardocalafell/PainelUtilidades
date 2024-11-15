@@ -106,8 +106,7 @@ C:\Users\Eduardo Calafell\OneDrive\Documentos\Projetos VSCode\ConsultaCnpjReceit
 C:\Users\Eduardo Calafell\OneDrive\Documentos\Projetos VSCode\ConsultaCnpjReceita\bin\Debug\net8.0\tr\Microsoft.CodeAnalysis.Workspaces.resources.dll
 C:\Users\Eduardo Calafell\OneDrive\Documentos\Projetos VSCode\ConsultaCnpjReceita\bin\Debug\net8.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.resources.dll
 C:\Users\Eduardo Calafell\OneDrive\Documentos\Projetos VSCode\ConsultaCnpjReceita\bin\Debug\net8.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\Users\eduardo.calafell\source\repos\PainelUtilidades\bin\Debug\net8.0\appsettings.Development.json
-C:\Users\eduardo.calafell\source\repos\PainelUtilidades\bin\Debug\net8.0\appsettings.json
+C:\Users\eduardo.calafell\source\repos\PainelUtilidades\bin\Debug\net8.0\.log
 C:\Users\eduardo.calafell\source\repos\PainelUtilidades\bin\Debug\net8.0\ConsultaCnpjReceita.exe
 C:\Users\eduardo.calafell\source\repos\PainelUtilidades\bin\Debug\net8.0\ConsultaCnpjReceita.deps.json
 C:\Users\eduardo.calafell\source\repos\PainelUtilidades\bin\Debug\net8.0\ConsultaCnpjReceita.runtimeconfig.json
@@ -214,3 +213,6 @@ C:\Users\eduardo.calafell\source\repos\PainelUtilidades\obj\Debug\net8.0\Consult
 C:\Users\eduardo.calafell\source\repos\PainelUtilidades\obj\Debug\net8.0\ConsultaCnpjReceita.pdb
 C:\Users\eduardo.calafell\source\repos\PainelUtilidades\obj\Debug\net8.0\ConsultaCnpjReceita.genruntimeconfig.cache
 C:\Users\eduardo.calafell\source\repos\PainelUtilidades\obj\Debug\net8.0\ref\ConsultaCnpjReceita.dll
+C:\Users\eduardo.calafell\source\repos\PainelUtilidades\bin\Debug\net8.0\appsettings.Development.json
+C:\Users\eduardo.calafell\source\repos\PainelUtilidades\bin\Debug\net8.0\appsettings.json
+C:\Users\eduardo.calafell\source\repos\PainelUtilidades\bin\Debug\net8.0\bin\Debug\net8.0\.log
