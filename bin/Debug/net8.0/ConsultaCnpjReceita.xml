@@ -21,6 +21,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:WebApi.Controllers.UtilidadesController.CallbackEstoqueSingulare(WebConsultaCnpjReceita.Models.WebhookPayload)">
+            <summary>
+            Retorno para callback de solicitação do relatório de Estoque.
+            </summary>
+            <returns></returns>
+        </member>
         <member name="T:ConsultaCnpjReceita.src.Data.Initial">
             <inheritdoc />
         </member>

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebConsultaCnpjReceita.Models
 {
@@ -23,6 +24,7 @@ namespace WebConsultaCnpjReceita.Models
         public string FileLink { get; set; }
     }
 
+    [PrimaryKey("WebhookId")]
     public class WebhookModel
     {
         public string WebhookId { get; set; }
