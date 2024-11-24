@@ -3,6 +3,7 @@ using Data.AppDbContext;
 using ConsultaCnpjReceita.Service;
 using System.Linq;
 using System.Data;
+using WebConsultaCnpjReceita.Models;
 
 namespace WebApi.Controllers
 {
@@ -17,12 +18,14 @@ namespace WebApi.Controllers
         private readonly AppDbContext _context;
         private readonly IServiceProvider _serviceProvider;
         private readonly UtilidadesService _utilidadesService;
+        private readonly WebhookService _webhookService;
 
         public UtilidadesController(AppDbContext context, IServiceProvider serviceProvider)
         {
             _context = context;
             _serviceProvider = serviceProvider;
             _utilidadesService = new UtilidadesService(_context, _serviceProvider);
+            _webhookService = new WebhookService(context);
         }
 
         /// <summary>
@@ -58,6 +61,18 @@ namespace WebApi.Controllers
             });
 
             // Retorne 202 Accepted imediatamente sem caracteres especiais
+            return Accepted(new { message = "Request accepted and is being processed in the background." });
+        }
+
+        /// <summary>
+        /// Retorno para callback de solicitação do relatório de Estoque.
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("CallbackEstoqueSingulare")]
+        [ProducesResponseType(202), ProducesResponseType(400)]
+        public IActionResult CallbackEstoqueSingulare(WebhookPayload payload)
+        {
+            _webhookService.CallbackEstoqueSingulare(payload);
             return Accepted(new { message = "Request accepted and is being processed in the background." });
         }
     }

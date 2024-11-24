@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ConsultaCnpjReceita.Model;
+using WebConsultaCnpjReceita.Models;
 
 namespace Data.AppDbContext;
 
@@ -16,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<FinaxisLiquidados> tb_stg_liquidados_finaxis_full { get; set; }
     public DbSet<HemeraLiquidadosRecompra> tb_stg_liquidados_recompra_hemera_full { get; set; }
     public DbSet<SingulareLiquidados> tb_stg_liquidados_singulare_full { get; set; }
+    public DbSet<WebhookModel> tb_aux_callback_estoque_singulare { get; set; }
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
