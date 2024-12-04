@@ -19,6 +19,21 @@ public class UtilidadesService
     private readonly IServiceProvider _serviceProvider;
     private static readonly object _logLock = new object();
     private IConfiguration Configuration { get; set; }
+    private readonly List<DateTime> feriadosAnbima = new List<DateTime>
+{
+    new DateTime(2024, 1, 1),  // Confraternização Universal
+    new DateTime(2024, 2, 12), // Carnaval
+    new DateTime(2024, 2, 13), // Carnaval
+    new DateTime(2024, 3, 29), // Sexta-feira Santa
+    new DateTime(2024, 4, 21), // Tiradentes
+    new DateTime(2024, 5, 1),  // Dia do Trabalho
+    new DateTime(2024, 9, 7),  // Independência do Brasil
+    new DateTime(2024, 10, 12), // Nossa Senhora Aparecida
+    new DateTime(2024, 11, 2), // Finados
+    new DateTime(2024, 11, 15), // Proclamação da República
+    new DateTime(2024, 12, 25) // Natal
+};
+
 
     public UtilidadesService(AppDbContext context, IServiceProvider serviceProvider)
     {
@@ -192,8 +207,6 @@ public class UtilidadesService
             var xmlExistentes = context.tb_aux_Xml_Anbima.ToList();
             var listaFidcs = RecuperarFidcs();
 
-            Debug.WriteLine("PASSOU AQUI");
-
             using HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{pswr}")));
 
@@ -208,78 +221,36 @@ public class UtilidadesService
                 var retry = 0;
                 do
                 {
-                    response = await client.GetAsync(url + $"netreport/report/xml-anbima/{f}");
+                    response = await client.GetAsync(url + $"netreport/report/xml-anbima/{f}/{ObterDataUtilD2(feriadosAnbima)}");
                     if (response.IsSuccessStatusCode)
                     {
                         var ret = await response.Content.ReadAsStringAsync();
-                        XmlSerializer serializer = new XmlSerializer(typeof(ArquivoPosicao));
-                        using StringReader reader = new StringReader(ret);
+                        var novoXml = new NovoXmlAnbima
+                        {
+                            Id = Guid.NewGuid(),
+                            NomeFundo = f,
+                            DataCarteira = ObterDataUtilD2(feriadosAnbima),
+                            Xml = ret
+                        };
 
                         try
                         {
-                            ArquivoPosicao arquivoPosicao = (ArquivoPosicao)serializer.Deserialize(reader);
-
-                            if (arquivoPosicao.Fundo is not null)
-                            {
-                                XmlAmbimaModel xmlAmbimaModel = new XmlAmbimaModel
-                                {
-                                    Isin = arquivoPosicao.Fundo?.Header?.Isin ?? string.Empty,
-                                    Cnpj = arquivoPosicao.Fundo?.Header?.Cnpj ?? string.Empty,
-                                    Nome = arquivoPosicao.Fundo?.Header?.Nome ?? string.Empty,
-                                    DataPosicao = arquivoPosicao.Fundo?.Header?.DataPosicao ?? string.Empty,
-                                    NomeAdm = arquivoPosicao.Fundo?.Header?.NomeAdm ?? string.Empty,
-                                    CnpjAdm = arquivoPosicao.Fundo?.Header?.CnpjAdm ?? string.Empty,
-                                    NomeGestor = arquivoPosicao.Fundo?.Header?.NomeGestor ?? string.Empty,
-                                    CnpjGestor = arquivoPosicao.Fundo?.Header?.CnpjGestor ?? string.Empty,
-                                    NomeCustodiante = arquivoPosicao.Fundo?.Header?.NomeCustodiante ?? string.Empty,
-                                    CnpjCustodiante = arquivoPosicao.Fundo?.Header?.CnpjCustodiante ?? string.Empty,
-                                    ValorCota = arquivoPosicao.Fundo?.Header?.ValorCota ?? 0,
-                                    Quantidade = arquivoPosicao.Fundo?.Header?.Quantidade ?? 0,
-                                    PatrimonioLiquido = arquivoPosicao.Fundo?.Header?.PatrimonioLiquido ?? 0,
-                                    ValorAtivos = arquivoPosicao.Fundo?.Header?.ValorAtivos ?? 0,
-                                    ValorReceber = arquivoPosicao.Fundo?.Header?.ValorReceber ?? 0,
-                                    ValorPagar = arquivoPosicao.Fundo?.Header?.ValorPagar ?? 0,
-                                    VlCotasEmitir = arquivoPosicao.Fundo?.Header?.VlCotasEmitir ?? 0,
-                                    VlCotasResgatar = arquivoPosicao.Fundo?.Header?.VlCotasResgatar ?? 0,
-                                    CodAnbid = arquivoPosicao.Fundo?.Header?.CodAnbid ?? 0,
-                                    TipoFundo = arquivoPosicao.Fundo?.Header?.TipoFundo ?? 0,
-                                    NivelRsc = arquivoPosicao.Fundo?.Header?.NivelRsc ?? string.Empty,
-                                    TipoConta = arquivoPosicao.Fundo?.Caixa?.TipoConta ?? string.Empty,
-                                    Saldo = arquivoPosicao.Fundo?.Caixa?.Saldo ?? 0,
-                                    ValorFinanceiro = arquivoPosicao.Fundo?.FIDC?.ValorFinanceiro ?? 0,
-                                    CodProv = arquivoPosicao.Fundo?.Provisao?.CodProv ?? 0,
-                                    CreDebProv = arquivoPosicao.Fundo?.Provisao?.CreDeb ?? string.Empty,
-                                    DataProv = arquivoPosicao.Fundo?.Provisao?.Data ?? string.Empty,
-                                    ValorProv = arquivoPosicao.Fundo?.Provisao?.Valor ?? 0
-                                };
-
-                                if (xmlExistentes.FirstOrDefault(x => x.DataPosicao == xmlAmbimaModel.DataPosicao && x.Nome == xmlAmbimaModel.Nome) == null)
-                                {
-                                    await context.tb_aux_Xml_Anbima.AddAsync(xmlAmbimaModel);
-                                    await context.SaveChangesAsync();
-                                }
-                            }
+                            context.tb_aux_retorno_xml_anbima.Add(novoXml);
+                            context.SaveChanges();
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            // Lidar com erros de desserialização
+                            Debug.WriteLine(ex.InnerException);
                         }
-                        break;
                     }
                     else
                     {
                         retry++;
                         await Task.Delay(3000);
-                        if (retry > 5)
-                        {
-                            // Escrever log de falha após várias tentativas
-                        }
                     }
                 } while (!response.IsSuccessStatusCode && retry <= 5);
             }
         }
-
-        Debug.WriteLine("ACABOU");
 
     }
 
@@ -302,6 +273,29 @@ public class UtilidadesService
         }
     }
 
+    private static string ObterDataUtilD2(List<DateTime> feriados)
+    {
+        var hoje = DateTime.Today;
+        var diasUteis = 0;
+        var dataCalculada = hoje;
+
+        while (diasUteis < 2)
+        {
+            dataCalculada = dataCalculada.AddDays(-1); // Subtraindo 1 dia por vez
+
+            // Verifica se é dia útil (não final de semana e não feriado)
+            if (dataCalculada.DayOfWeek != DayOfWeek.Saturday &&
+                dataCalculada.DayOfWeek != DayOfWeek.Sunday &&
+                !feriados.Contains(dataCalculada))
+            {
+                diasUteis++;
+            }
+        }
+
+        // Retorna a data no formato "yyyy-MM-dd"
+        return dataCalculada.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    }
+
     private List<string> RecuperarFidcs()
     {
         return
@@ -309,6 +303,7 @@ public class UtilidadesService
             "AURUM FIDC",
             "AURUM FIDC MZ L",
             "BRAVA FIDC",
+            "BRAVA FIDC SUB",
             "BRAVA FIDC MZ1",
             "BRAVA FIDC SR1",
             "CUPERTINO FIDC",

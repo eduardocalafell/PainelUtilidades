@@ -1,0 +1,38 @@
+<?xml version='1.0'?>
+
+<arquivoposicao_4_01><fundo>
+	<header>
+		<isin>BR04SLCTF019</isin>
+		<cnpj>35982683000104</cnpj>
+		<nome>GPR FIDC MEZA 1</nome>
+		<dtposicao>20241202</dtposicao>
+		<nomeadm>SINGULARE CTVM S A</nomeadm>
+		<cnpjadm>62285390000140</cnpjadm>
+		<nomegestor>M8 PARTNERS GESTORA DE RECURSOS LTD</nomegestor>
+		<cnpjgestor>18038439000179</cnpjgestor>
+		<nomecustodiante>SINGULARE CTVM SA</nomecustodiante>
+		<cnpjcustodiante>62285390000140</cnpjcustodiante>
+		<valorcota>43603.677962260</valorcota>
+		<quantidade>38.187593520</quantidade>
+		<patliq>1665119.53</patliq>
+		<valorativos>1665119.53</valorativos>
+		<valorreceber>0.00</valorreceber>
+		<valorpagar>0.00</valorpagar>
+		<vlcotasemitir>0.00</vlcotasemitir>
+		<vlcotasresgatar>0.00</vlcotasresgatar>
+		<codanbid>592651</codanbid>
+		<tipofundo>278</tipofundo>
+		<nivelrsc></nivelrsc>
+	</header>
+	<caixa>
+		<isininstituicao>******</isininstituicao>
+		<tpconta>D</tpconta>
+		<saldo>0.00</saldo>
+		<nivelrsc>BB</nivelrsc>
+	</caixa>
+	<fidc>
+		<valorfinanceiro>1665119.53</valorfinanceiro>
+	</fidc>
+</fundo>
+
+</arquivoposicao_4_01>

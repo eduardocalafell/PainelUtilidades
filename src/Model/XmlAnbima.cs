@@ -183,4 +183,13 @@ namespace ConsultaCnpjReceita.Model
         [XmlElement(ElementName = "valor")]
         public decimal Valor { get; set; }
     }
+
+    [PrimaryKey("Id")]
+    public class NovoXmlAnbima
+    {
+        public Guid Id { get; set; } = Guid.NewGuid();
+        public string NomeFundo { get; set; }
+        public string DataCarteira { get; set; }
+        public string Xml { get; set; }
+    }
 }

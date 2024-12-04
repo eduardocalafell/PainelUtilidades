@@ -1,0 +1,38 @@
+<?xml version='1.0'?>
+
+<arquivoposicao_4_01><fundo>
+	<header>
+		<isin>BRVLCRCTF0J5</isin>
+		<cnpj>08654210000105</cnpj>
+		<nome>ONE7 LP FIDC MULTISSETORIAL MEZ G</nome>
+		<dtposicao>20241202</dtposicao>
+		<nomeadm>SINGULARE CTVM S A</nomeadm>
+		<cnpjadm>62285390000140</cnpjadm>
+		<nomegestor>M8 PARTNERS GESTORA DE RECURSOS LTD</nomegestor>
+		<cnpjgestor>18038439000179</cnpjgestor>
+		<nomecustodiante>SINGULARE CTVM SA</nomecustodiante>
+		<cnpjcustodiante>62285390000140</cnpjcustodiante>
+		<valorcota>1177.246376000</valorcota>
+		<quantidade>5000.000000000</quantidade>
+		<patliq>5886231.88</patliq>
+		<valorativos>5886231.88</valorativos>
+		<valorreceber>0.00</valorreceber>
+		<valorpagar>0.00</valorpagar>
+		<vlcotasemitir>0.00</vlcotasemitir>
+		<vlcotasresgatar>0.00</vlcotasresgatar>
+		<codanbid>742120</codanbid>
+		<tipofundo>278</tipofundo>
+		<nivelrsc></nivelrsc>
+	</header>
+	<caixa>
+		<isininstituicao>******</isininstituicao>
+		<tpconta>D</tpconta>
+		<saldo>0.00</saldo>
+		<nivelrsc>BB</nivelrsc>
+	</caixa>
+	<fidc>
+		<valorfinanceiro>5886231.88</valorfinanceiro>
+	</fidc>
+</fundo>
+
+</arquivoposicao_4_01>

@@ -18,6 +18,7 @@ public class AppDbContext : DbContext
     public DbSet<HemeraLiquidadosRecompra> tb_stg_liquidados_recompra_hemera_full { get; set; }
     public DbSet<SingulareLiquidados> tb_stg_liquidados_singulare_full { get; set; }
     public DbSet<WebhookModel> tb_aux_callback_estoque_singulare { get; set; }
+    public DbSet<NovoXmlAnbima> tb_aux_retorno_xml_anbima { get; set; }
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
@@ -30,5 +31,8 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<NovoXmlAnbima>()
+            .Property(e => e.Xml)
+            .HasColumnType("xml");
     }
 }
