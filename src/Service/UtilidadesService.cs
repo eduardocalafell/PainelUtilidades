@@ -204,7 +204,7 @@ public class UtilidadesService
             var url = Configuration.GetSection("Singulare:Url").Value;
             var user = Configuration.GetSection("Singulare:Usuario").Value;
             var pswr = Configuration.GetSection("Singulare:Senha").Value;
-            var xmlExistentes = context.tb_aux_Xml_Anbima.ToList();
+            var xmlExistentes = context.tb_aux_retorno_xml_anbima.ToList();
             var listaFidcs = RecuperarFidcs();
 
             using HttpClient client = new HttpClient();
@@ -216,39 +216,61 @@ public class UtilidadesService
             client.DefaultRequestHeaders.Authorization = null;
             client.DefaultRequestHeaders.Add("x-api-key", authToken);
 
-            foreach (var f in listaFidcs)
-            {
-                var retry = 0;
-                do
-                {
-                    response = await client.GetAsync(url + $"netreport/report/xml-anbima/{f}/{ObterDataUtilD2(feriadosAnbima)}");
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var ret = await response.Content.ReadAsStringAsync();
-                        var novoXml = new NovoXmlAnbima
-                        {
-                            Id = Guid.NewGuid(),
-                            NomeFundo = f,
-                            DataCarteira = ObterDataUtilD2(feriadosAnbima),
-                            Xml = ret
-                        };
+            DateTime dataInicial = DateTime.Today;
+            DateTime dataFinal = DateTime.Today.AddDays(-1);
 
-                        try
+            while (dataInicial > dataFinal)
+            {
+                var dataPesquisa = ObterDataUtilD2(feriadosAnbima, dataInicial);
+                Debug.WriteLine($"Começando execução para a data {dataPesquisa}", "Aviso");
+
+                foreach (var f in listaFidcs)
+                {
+                    var retry = 0;
+                    var registroExistente = xmlExistentes.FirstOrDefault(x => x.NomeFundo == f && x.DataCarteira == dataPesquisa);
+                    if (registroExistente is null)
+                    {
+                        do
                         {
-                            context.tb_aux_retorno_xml_anbima.Add(novoXml);
-                            context.SaveChanges();
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine(ex.InnerException);
-                        }
+                            response = await client.GetAsync(url + $"netreport/report/xml-anbima/{f}/{dataPesquisa}");
+                            if (response.IsSuccessStatusCode)
+                            {
+                                var ret = await response.Content.ReadAsStringAsync();
+                                var novoXml = new NovoXmlAnbima
+                                {
+                                    Id = Guid.NewGuid(),
+                                    NomeFundo = f,
+                                    DataCarteira = dataPesquisa,
+                                    Xml = ret
+                                };
+
+                                try
+                                {
+                                    context.tb_aux_retorno_xml_anbima.Add(novoXml);
+                                    xmlExistentes.Add(novoXml);
+                                    context.SaveChanges();
+                                    Debug.WriteLine($"Adicionado {f} para a data {dataPesquisa}", "Aviso");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Debug.WriteLine(ex.InnerException);
+                                }
+                            }
+                            else
+                            {
+                                retry++;
+                                Debug.WriteLine($"{f} não encontrado para a data {dataPesquisa}", "Aviso");
+                                await Task.Delay(500);
+                            }
+                        } while (!response.IsSuccessStatusCode && retry <= 0);
                     }
                     else
                     {
-                        retry++;
-                        await Task.Delay(3000);
+                        Debug.WriteLine($"{f} já inserido para a data {dataPesquisa}", "Aviso");
                     }
-                } while (!response.IsSuccessStatusCode && retry <= 5);
+                }
+
+                dataInicial = dataInicial.AddDays(-1);
             }
         }
 
@@ -273,9 +295,9 @@ public class UtilidadesService
         }
     }
 
-    private static string ObterDataUtilD2(List<DateTime> feriados)
+    private static string ObterDataUtilD2(List<DateTime> feriados, DateTime? dataInicial = null)
     {
-        var hoje = DateTime.Today;
+        var hoje = dataInicial?.Date ?? DateTime.Today;
         var diasUteis = 0;
         var dataCalculada = hoje;
 
