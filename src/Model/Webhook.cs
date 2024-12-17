@@ -6,10 +6,10 @@ namespace WebConsultaCnpjReceita.Models
     public class WebhookPayload
     {
         [JsonPropertyName("webhookId")]
-        public string WebhookId { get; set; }
+        public int WebhookId { get; set; }
 
         [JsonPropertyName("jobId")]
-        public string JobId { get; set; }
+        public int JobId { get; set; }
 
         [JsonPropertyName("eventType")]
         public string EventType { get; set; }

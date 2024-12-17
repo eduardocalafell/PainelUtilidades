@@ -323,7 +323,7 @@ public class UtilidadesService
         return
         [
             "AURUM FIDC",
-            "AURUM FIDC MZ L",
+            "FIDC AURUM MEZL",
             "BRAVA FIDC",
             "BRAVA FIDC SUB",
             "BRAVA FIDC MZ1",

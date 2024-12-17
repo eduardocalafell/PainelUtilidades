@@ -20,8 +20,8 @@ public class WebhookService
             {
                 EventType = payload.EventType,
                 FileLink = payload.Data.FileLink,
-                JobId = payload.JobId,
-                WebhookId = payload.WebhookId,
+                JobId = payload.JobId.ToString(),
+                WebhookId = payload.WebhookId.ToString(),
             };
 
             _context.tb_aux_callback_estoque_singulare.Add(payloadModel);
