@@ -25,7 +25,7 @@ namespace WebApi.Controllers
             _context = context;
             _serviceProvider = serviceProvider;
             _utilidadesService = new UtilidadesService(_context, _serviceProvider);
-            _webhookService = new WebhookService(context);
+            _webhookService = new WebhookService(_context, _serviceProvider);
         }
 
         /// <summary>
@@ -73,6 +73,30 @@ namespace WebApi.Controllers
         public IActionResult CallbackEstoqueSingulare(WebhookPayload payload)
         {
             _webhookService.CallbackEstoqueSingulare(payload);
+            return Accepted(new { message = "Request accepted and is being processed in the background." });
+        }
+
+        /// <summary>
+        /// Iniciar recuperação do estoque diário de cada fundo.
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("RecuperarRelatorioEstoqueSingulare")]
+        [ProducesResponseType(202), ProducesResponseType(400)]
+        public IActionResult RecuperarRelatorioEstoqueSingulare()
+        {
+            Task.Run(() => _webhookService.RecuperarRelatorioEstoqueSingulare());
+            return Accepted(new { message = "Request accepted and is being processed in the background." });
+        }
+
+        /// <summary>
+        /// Processa os arquivos de estoque recebidos através do callback.
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("ProcessarArquivosEstoqueSingulare")]
+        [ProducesResponseType(202), ProducesResponseType(400)]
+        public IActionResult ProcessarArquivosEstoqueSingulare()
+        {
+            Task.Run(() => _webhookService.ProcessarArquivosEstoqueSingulare());
             return Accepted(new { message = "Request accepted and is being processed in the background." });
         }
     }

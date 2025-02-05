@@ -106,3 +106,13 @@ public class SingulareLiquidados
     [Column("cpf_cnpj_cedente")]
     public string CnpjCedente { get; set; }
 }
+
+[PrimaryKey("Chave")]
+public class TituloPrivadoCarteira
+{
+    [Column("id_internoativo")]
+    public string Chave { get; set; }
+
+    [Column("cnpj_emissor")]
+    public string CnpjEmissor { get; set; }
+}

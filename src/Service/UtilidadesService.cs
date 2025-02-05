@@ -60,109 +60,121 @@ public class UtilidadesService
         {
             var scopedContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            // Finaxis Estoque
-            var ListaEstoqueFinaxis = await scopedContext.tb_stg_estoque_finaxis_full.Select(x => new CnpjModelDTO
+            // Titulos Privados
+            var ListaTitulosPrivados = await scopedContext.tb_ods_titulo_privado_carteira.Select(x => new CnpjModelDTO
             {
-                CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
-                CnpjCedente = FormatarCnpj(x.CnpjCedente),
-                CnpjSacado = FormatarCnpj(x.CnpjSacado),
-            }).ToListAsync();
+                CnpjOriginador = FormatarCnpj(x.CnpjEmissor)
+            }).Distinct().ToListAsync();
 
-            ListaEstoqueFinaxis.ForEach(f =>
+            ListaTitulosPrivados.ForEach(f =>
             {
                 listaCnpjConsulta.Add(f.CnpjOriginador);
-                listaCnpjConsulta.Add(f.CnpjCedente);
-                listaCnpjConsulta.Add(f.CnpjSacado);
             });
-            // Fim Finaxis Estoque
+            // Fim Titulos Privados
 
-            // Hemera Estoque
-            var ListaEstoqueHemera = await scopedContext.tb_stg_estoque_hemera_full.Select(x => new CnpjModelDTO
-            {
-                CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
-                CnpjCedente = FormatarCnpj(x.CnpjCedente),
-                CnpjSacado = FormatarCnpj(x.CnpjSacado),
-            }).ToListAsync();
+            /*             // Finaxis Estoque
+                        var ListaEstoqueFinaxis = await scopedContext.tb_stg_estoque_finaxis_full.Select(x => new CnpjModelDTO
+                        {
+                            CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
+                            CnpjCedente = FormatarCnpj(x.CnpjCedente),
+                            CnpjSacado = FormatarCnpj(x.CnpjSacado),
+                        }).ToListAsync();
 
-            ListaEstoqueHemera.ForEach(f =>
-            {
-                listaCnpjConsulta.Add(f.CnpjOriginador);
-                listaCnpjConsulta.Add(f.CnpjCedente);
-                listaCnpjConsulta.Add(f.CnpjSacado);
-            });
-            // Fim Hemera Estoque
+                        ListaEstoqueFinaxis.ForEach(f =>
+                        {
+                            listaCnpjConsulta.Add(f.CnpjOriginador);
+                            listaCnpjConsulta.Add(f.CnpjCedente);
+                            listaCnpjConsulta.Add(f.CnpjSacado);
+                        });
+                        // Fim Finaxis Estoque
 
-            // Singulare Estoque
-            var ListaEstoqueSingulare = await scopedContext.tb_stg_estoque_singulare_full.Select(x => new CnpjModelDTO
-            {
-                CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
-                CnpjCedente = FormatarCnpj(x.CnpjCedente),
-                CnpjSacado = FormatarCnpj(x.CnpjSacado),
-            }).ToListAsync();
+                        // Hemera Estoque
+                        var ListaEstoqueHemera = await scopedContext.tb_stg_estoque_hemera_full.Select(x => new CnpjModelDTO
+                        {
+                            CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
+                            CnpjCedente = FormatarCnpj(x.CnpjCedente),
+                            CnpjSacado = FormatarCnpj(x.CnpjSacado),
+                        }).ToListAsync();
 
-            ListaEstoqueSingulare.ForEach(f =>
-            {
-                listaCnpjConsulta.Add(f.CnpjOriginador);
-                listaCnpjConsulta.Add(f.CnpjCedente);
-                listaCnpjConsulta.Add(f.CnpjSacado);
-            });
-            // Fim Singulare Estoque
+                        ListaEstoqueHemera.ForEach(f =>
+                        {
+                            listaCnpjConsulta.Add(f.CnpjOriginador);
+                            listaCnpjConsulta.Add(f.CnpjCedente);
+                            listaCnpjConsulta.Add(f.CnpjSacado);
+                        });
+                        // Fim Hemera Estoque
 
-            // Hemera Liquidados
-            var ListaLiquidadosHemera = await scopedContext.tb_stg_estoque_singulare_full.Select(x => new CnpjModelDTO
-            {
-                CnpjCedente = FormatarCnpj(x.CnpjCedente),
-                CnpjSacado = FormatarCnpj(x.CnpjSacado),
-            }).ToListAsync();
+                        // Singulare Estoque
+                        var ListaEstoqueSingulare = await scopedContext.tb_stg_estoque_singulare_full.Select(x => new CnpjModelDTO
+                        {
+                            CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
+                            CnpjCedente = FormatarCnpj(x.CnpjCedente),
+                            CnpjSacado = FormatarCnpj(x.CnpjSacado),
+                        }).ToListAsync();
 
-            ListaLiquidadosHemera.ForEach(f =>
-            {
-                listaCnpjConsulta.Add(f.CnpjCedente);
-                listaCnpjConsulta.Add(f.CnpjSacado);
-            });
-            // Fim Hemera Liquidados
+                        ListaEstoqueSingulare.ForEach(f =>
+                        {
+                            listaCnpjConsulta.Add(f.CnpjOriginador);
+                            listaCnpjConsulta.Add(f.CnpjCedente);
+                            listaCnpjConsulta.Add(f.CnpjSacado);
+                        });
+                        // Fim Singulare Estoque
 
-            // Finaxis Liquidados
-            var ListaLiquidadosFinaxis = await scopedContext.tb_stg_liquidados_finaxis_full.Select(x => new CnpjModelDTO
-            {
-                CnpjCedente = FormatarCnpj(x.CnpjCedente),
-                CnpjSacado = FormatarCnpj(x.CnpjSacado),
-            }).ToListAsync();
+                        // Hemera Liquidados
+                        var ListaLiquidadosHemera = await scopedContext.tb_stg_estoque_singulare_full.Select(x => new CnpjModelDTO
+                        {
+                            CnpjCedente = FormatarCnpj(x.CnpjCedente),
+                            CnpjSacado = FormatarCnpj(x.CnpjSacado),
+                        }).ToListAsync();
 
-            ListaLiquidadosFinaxis.ForEach(f =>
-            {
-                listaCnpjConsulta.Add(f.CnpjCedente);
-                listaCnpjConsulta.Add(f.CnpjSacado);
-            });
-            // Fim Finaxis Liquidados
+                        ListaLiquidadosHemera.ForEach(f =>
+                        {
+                            listaCnpjConsulta.Add(f.CnpjCedente);
+                            listaCnpjConsulta.Add(f.CnpjSacado);
+                        });
+                        // Fim Hemera Liquidados
 
-            // Finaxis Liquidados Recompra Hemera
-            var ListaLiquidadosRecompraHemera = await scopedContext.tb_stg_liquidados_recompra_hemera_full.Select(x => new CnpjModelDTO
-            {
-                CnpjCedente = FormatarCnpj(x.CnpjCedente),
-                CnpjSacado = FormatarCnpj(x.CnpjSacado),
-            }).ToListAsync();
+                        // Finaxis Liquidados
+                        var ListaLiquidadosFinaxis = await scopedContext.tb_stg_liquidados_finaxis_full.Select(x => new CnpjModelDTO
+                        {
+                            CnpjCedente = FormatarCnpj(x.CnpjCedente),
+                            CnpjSacado = FormatarCnpj(x.CnpjSacado),
+                        }).ToListAsync();
 
-            ListaLiquidadosRecompraHemera.ForEach(f =>
-            {
-                listaCnpjConsulta.Add(f.CnpjCedente);
-                listaCnpjConsulta.Add(f.CnpjSacado);
-            });
-            // Fim Hemera Liquidados Recompra
+                        ListaLiquidadosFinaxis.ForEach(f =>
+                        {
+                            listaCnpjConsulta.Add(f.CnpjCedente);
+                            listaCnpjConsulta.Add(f.CnpjSacado);
+                        });
+                        // Fim Finaxis Liquidados
 
-            // Singulare Liquidados
-            var ListaLiquidadosSingulare = await scopedContext.tb_stg_liquidados_singulare_full.Select(x => new CnpjModelDTO
-            {
-                CnpjCedente = FormatarCnpj(x.CnpjCedente),
-                CnpjSacado = FormatarCnpj(x.CnpjSacado),
-            }).ToListAsync();
+                        // Finaxis Liquidados Recompra Hemera
+                        var ListaLiquidadosRecompraHemera = await scopedContext.tb_stg_liquidados_recompra_hemera_full.Select(x => new CnpjModelDTO
+                        {
+                            CnpjCedente = FormatarCnpj(x.CnpjCedente),
+                            CnpjSacado = FormatarCnpj(x.CnpjSacado),
+                        }).ToListAsync();
 
-            ListaLiquidadosSingulare.ForEach(f =>
-            {
-                listaCnpjConsulta.Add(f.CnpjCedente);
-                listaCnpjConsulta.Add(f.CnpjSacado);
-            });
-            // Fim Singulare Liquidados
+                        ListaLiquidadosRecompraHemera.ForEach(f =>
+                        {
+                            listaCnpjConsulta.Add(f.CnpjCedente);
+                            listaCnpjConsulta.Add(f.CnpjSacado);
+                        });
+                        // Fim Hemera Liquidados Recompra
+
+                        // Singulare Liquidados
+                        var ListaLiquidadosSingulare = await scopedContext.tb_stg_liquidados_singulare_full.Select(x => new CnpjModelDTO
+                        {
+                            CnpjCedente = FormatarCnpj(x.CnpjCedente),
+                            CnpjSacado = FormatarCnpj(x.CnpjSacado),
+                        }).ToListAsync();
+
+                        ListaLiquidadosSingulare.ForEach(f =>
+                        {
+                            listaCnpjConsulta.Add(f.CnpjCedente);
+                            listaCnpjConsulta.Add(f.CnpjSacado);
+                        });
+                        // Fim Singulare Liquidados */
 
             var url = Configuration.GetSection("ReceitaWs:Url").Value;
             HttpClient client = new HttpClient();
@@ -217,6 +229,7 @@ public class UtilidadesService
             client.DefaultRequestHeaders.Add("x-api-key", authToken);
 
             DateTime dataInicial = DateTime.Today;
+            //DateTime dataFinal = new DateTime(2024, 10, 1);
             DateTime dataFinal = DateTime.Today.AddDays(-1);
 
             while (dataInicial > dataFinal)

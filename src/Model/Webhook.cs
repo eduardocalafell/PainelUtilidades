@@ -31,5 +31,6 @@ namespace WebConsultaCnpjReceita.Models
         public string JobId { get; set; }
         public string EventType { get; set; }
         public string FileLink { get; set; }
+        public bool IsProcessado { get; set; } = false;
     }
 }
