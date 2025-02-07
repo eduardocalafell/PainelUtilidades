@@ -149,7 +149,6 @@ public class WebhookService
 
     public Task ProcessarArquivosEstoqueSingulare()
     {
-
         using (var scope = _provider.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -163,18 +162,15 @@ public class WebhookService
 
                 foreach (var arquivo in arquivosProcessar)
                 {
-                    ms.Position = 0;
                     var content = httpClient.GetAsync(arquivo.FileLink).Result.Content.ReadAsStream();
                     content.CopyTo(ms);
+                    ms.Position = 0;
 
-                    File.WriteAllBytes(Environment.CurrentDirectory + "/src/arquivo.csv", ms.ToArray());
-
-                    ms.Flush();
-
-                    using var reader = new StreamReader(Environment.CurrentDirectory + "/src/arquivo.csv");
+                    using var reader = new StreamReader(ms);
                     using var csv = new CsvReader(reader, new CsvConfiguration
                     {
-                        Delimiter = ";"
+                        Delimiter = ";",
+                        HasHeaderRecord = true,
                     });
 
                     var estoque = csv.GetRecords<EstoqueCsv>().ToList();
@@ -213,13 +209,13 @@ public class WebhookService
                             coobrigacao = titulo.coobrigacao
                         };
 
-                        if (!context.tb_stg_estoque_singulare_full.Select(x => x.nu_documento).Contains(linhaEstoque.nu_documento))
+                        if (!context.tb_stg_estoque_singulare_full.Select(x => x.seu_numero).Contains(linhaEstoque.seu_numero))
                         {
                             context.tb_stg_estoque_singulare_full.Add(linhaEstoque);
                         }
                         else
                         {
-                            var updateEstoque = context.tb_stg_estoque_singulare_full.FirstOrDefault(x => x.nu_documento == linhaEstoque.nu_documento);
+                            var updateEstoque = context.tb_stg_estoque_singulare_full.FirstOrDefault(x => x.seu_numero == linhaEstoque.seu_numero);
 
                             if (updateEstoque != null)
                             {
@@ -255,14 +251,14 @@ public class WebhookService
 
                             context.tb_stg_estoque_singulare_full.Update(updateEstoque);
                         }
-
-                        reader.Close();
-
-                        arquivo.IsProcessado = true;
-
-                        context.tb_aux_callback_estoque_singulare.Update(arquivo);
-                        context.SaveChanges();
                     }
+
+                    reader.Close();
+
+                    arquivo.IsProcessado = true;
+
+                    context.tb_aux_callback_estoque_singulare.Update(arquivo);
+                    context.SaveChanges();
                 }
             }
         }

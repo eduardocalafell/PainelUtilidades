@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("M8Dev");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString),
-    ServiceLifetime.Scoped);
+    ServiceLifetime.Singleton);
 
 builder.Services.AddControllers(options =>
 {

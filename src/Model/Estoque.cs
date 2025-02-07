@@ -72,7 +72,7 @@ namespace ConsultaCnpjReceita.Model
         public string coobrigacao { get; set; }
     }
 
-    [PrimaryKey("nu_documento")]
+    [PrimaryKey("seu_numero")]
     public class EstoqueModel
     {
         public string nome_fundo { get; set; }
@@ -104,6 +104,4 @@ namespace ConsultaCnpjReceita.Model
         public string tx_recebivel { get; set; }
         public string coobrigacao { get; set; }
     }
-
-
 }
