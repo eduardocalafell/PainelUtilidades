@@ -2,8 +2,14 @@ using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using Data.AppDbContext;
 using Microsoft.EntityFrameworkCore;
+using ConsultaCnpjReceita.Model;
+using ConsultaCnpjReceita.Service;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSingleton<ProcessamentoBackgroundService>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<ProcessamentoBackgroundService>());
+builder.Services.AddScoped<WebhookService>();
 
 var connectionString = builder.Configuration.GetConnectionString("M8Dev");
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -37,6 +43,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+var backgroundService = app.Services.GetRequiredService<ProcessamentoBackgroundService>();
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>

@@ -65,86 +65,80 @@ public class WebhookService
         return Task.CompletedTask;
     }
 
-    public Task RecuperarRelatorioEstoqueSingulare()
+    public async Task RecuperarRelatorioEstoqueSingulare()
     {
-        using (var scope = _provider.CreateScope())
+        using var scope = _provider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var listaFundos = context.tb_fato_carteira.GroupBy(g => g.cnpj_fundo).Select(s => s.Key).ToList();
+        var listaProcessados = context.tb_aux_relatorios_processados.ToList();
+
+        var url = Configuration.GetSection("Singulare:Url").Value;
+        var user = Configuration.GetSection("Singulare:Usuario").Value;
+        var pswr = Configuration.GetSection("Singulare:Senha").Value;
+
+        using HttpClient client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{pswr}")));
+
+        var response = await client.PostAsync(url + "painel/token/api", null);
+        var authToken = JsonConvert.DeserializeObject<SingulareApiAuthResponse>(await response.Content.ReadAsStringAsync()).Token;
+
+        client.DefaultRequestHeaders.Authorization = null;
+        client.DefaultRequestHeaders.Add("x-api-key", authToken);
+
+        DateTime dataInicial = DateTime.Today;
+        DateTime dataFinal = new DateTime(2024, 1, 1);
+
+        if (listaFundos.Count > 0)
         {
-            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var listaFundos = context.tb_fato_carteira.GroupBy(g => g.cnpj_fundo).Select(s => s.Key).ToList();
-            var listaProcessados = context.tb_aux_relatorios_processados.ToList();
-
-            var url = Configuration.GetSection("Singulare:Url").Value;
-            var user = Configuration.GetSection("Singulare:Usuario").Value;
-            var pswr = Configuration.GetSection("Singulare:Senha").Value;
-
-            using HttpClient client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{pswr}")));
-
-            var response = client.PostAsync(url + "painel/token/api", null).Result;
-            var authToken = JsonConvert.DeserializeObject<SingulareApiAuthResponse>(response.Content.ReadAsStringAsync().Result).Token;
-
-            client.DefaultRequestHeaders.Authorization = null;
-            client.DefaultRequestHeaders.Add("x-api-key", authToken);
-
-            DateTime dataInicial = DateTime.Today;
-            DateTime dataFinal = new DateTime(2024, 1, 1);
-            //DateTime dataFinal = DateTime.Today.AddDays(-1);
-
-            if (listaFundos.Count > 0)
+            do
             {
-                do
+                foreach (var fundo in listaFundos)
                 {
-                    foreach (var fundo in listaFundos)
+                    var dataPesquisa = ObterDataUtilD2(feriadosAnbima, dataFinal);
+
+                    if (!listaProcessados.Any(x => x.DataSolicitada == dataPesquisa && x.Fundo == fundo))
                     {
-                        var dataPesquisa = ObterDataUtilD2(feriadosAnbima, dataFinal);
+                        Debug.WriteLine($"Começando execução para a data {dataPesquisa}", "Aviso");
 
-                        if (listaProcessados.FirstOrDefault(x => x.DataSolicitada == dataPesquisa && x.Fundo == fundo) is null)
+                        var obj = new
                         {
-                            Debug.WriteLine($"Começando execução para a data {dataPesquisa}", "Aviso");
+                            callbackUrl = "https://m8-core-api.azurewebsites.net/Utilidades/CallbackEstoqueSingulare/",
+                            cnpjFundo = fundo,
+                            date = dataPesquisa,
+                        };
 
-                            var obj = new
+                        var json = JsonConvert.SerializeObject(obj);
+                        var payload = new StringContent(json, Encoding.UTF8, "application/json");
+
+                        response = await client.PostAsync(url + $"queue/scheduler/report/fidc-estoque", payload);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            context.tb_aux_relatorios_processados.Add(new RelatoriosProcessados
                             {
-                                callbackUrl = "https://m8-core-api.azurewebsites.net/Utilidades/CallbackEstoqueSingulare/",
-                                cnpjFundo = fundo,
-                                date = dataPesquisa,
-                            };
+                                DataSolicitada = dataPesquisa,
+                                Fundo = fundo,
+                            });
 
-                            var json = JsonConvert.SerializeObject(obj);
-                            var payload = new StringContent(json, Encoding.UTF8, "application/json");
+                            await context.SaveChangesAsync();
 
-                            response = client.PostAsync(url + $"queue/scheduler/report/fidc-estoque", payload).Result;
-                            if (response.IsSuccessStatusCode)
-                            {
-                                var content = response.Content.ReadAsStringAsync().Result;
-
-                                context.tb_aux_relatorios_processados.Add(new RelatoriosProcessados
-                                {
-                                    DataSolicitada = dataPesquisa,
-                                    Fundo = fundo,
-                                });
-
-                                context.SaveChanges();
-
-                                Thread.Sleep(3000);
-                            }
-                            else
-                            {
-                                var error = response.Content.ReadAsStringAsync().Result;
-                            }
+                            await Task.Delay(3000); // Aguarda um pouco antes de processar o próximo
                         }
                         else
                         {
-                            Debug.WriteLine($"Relatório para a data {dataPesquisa} e fundo {fundo} já recuperado.", "Aviso");
+                            var error = await response.Content.ReadAsStringAsync();
+                            Console.WriteLine($"Erro ao processar fundo {fundo}: {error}");
                         }
                     }
+                    else
+                    {
+                        Debug.WriteLine($"Relatório para a data {dataPesquisa} e fundo {fundo} já recuperado.", "Aviso");
+                    }
+                }
 
-                    dataFinal = dataFinal.AddDays(1);
-                } while (dataFinal < dataInicial);
-
-            }
+                dataFinal = dataFinal.AddDays(1);
+            } while (dataFinal < dataInicial);
         }
-
-        return Task.CompletedTask;
     }
 
     public Task ProcessarArquivosEstoqueSingulare()

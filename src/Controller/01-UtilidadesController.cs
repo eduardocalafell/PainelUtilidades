@@ -4,6 +4,7 @@ using ConsultaCnpjReceita.Service;
 using System.Linq;
 using System.Data;
 using WebConsultaCnpjReceita.Models;
+using ConsultaCnpjReceita.Model;
 
 namespace WebApi.Controllers
 {
@@ -19,11 +20,13 @@ namespace WebApi.Controllers
         private readonly IServiceProvider _serviceProvider;
         private readonly UtilidadesService _utilidadesService;
         private readonly WebhookService _webhookService;
+        private readonly ProcessamentoBackgroundService _backgroundService;
 
-        public UtilidadesController(AppDbContext context, IServiceProvider serviceProvider)
+        public UtilidadesController(AppDbContext context, IServiceProvider serviceProvider, ProcessamentoBackgroundService processamentoBackgroundService)
         {
             _context = context;
             _serviceProvider = serviceProvider;
+            _backgroundService = processamentoBackgroundService;
             _utilidadesService = new UtilidadesService(_context, _serviceProvider);
             _webhookService = new WebhookService(_context, _serviceProvider);
         }
@@ -84,8 +87,13 @@ namespace WebApi.Controllers
         [ProducesResponseType(202), ProducesResponseType(400)]
         public IActionResult RecuperarRelatorioEstoqueSingulare()
         {
-            Task.Run(() => _webhookService.RecuperarRelatorioEstoqueSingulare());
-            return Accepted(new { message = "Request accepted and is being processed in the background." });
+            _backgroundService.AdicionarProcesso(async (serviceProviderNew) =>
+            {
+                var meuServico = serviceProviderNew.GetRequiredService<WebhookService>();
+                await meuServico.RecuperarRelatorioEstoqueSingulare();
+            });
+
+            return Accepted(new { message = "Processo adicionado à fila!" });
         }
 
         /// <summary>
