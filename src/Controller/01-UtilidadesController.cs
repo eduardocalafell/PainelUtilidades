@@ -18,17 +18,19 @@ namespace WebApi.Controllers
 
         private readonly AppDbContext _context;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceScopeFactory _scopeFactory;
         private readonly UtilidadesService _utilidadesService;
         private readonly WebhookService _webhookService;
         private readonly ProcessamentoBackgroundService _backgroundService;
 
-        public UtilidadesController(AppDbContext context, IServiceProvider serviceProvider, ProcessamentoBackgroundService processamentoBackgroundService)
+        public UtilidadesController(AppDbContext context, IServiceProvider serviceProvider, ProcessamentoBackgroundService processamentoBackgroundService, IServiceScopeFactory serviceScopeFactory)
         {
             _context = context;
             _serviceProvider = serviceProvider;
             _backgroundService = processamentoBackgroundService;
+            _scopeFactory = serviceScopeFactory;
             _utilidadesService = new UtilidadesService(_context, _serviceProvider);
-            _webhookService = new WebhookService(_context, _serviceProvider);
+            _webhookService = new WebhookService(_context, _scopeFactory);
         }
 
         /// <summary>
@@ -89,8 +91,8 @@ namespace WebApi.Controllers
         {
             _backgroundService.AdicionarProcesso(async (serviceProviderNew) =>
             {
-                var meuServico = serviceProviderNew.GetRequiredService<WebhookService>();
-                await meuServico.RecuperarRelatorioEstoqueSingulare();
+                var webhookService = serviceProviderNew.GetRequiredService<WebhookService>();
+                await webhookService.RecuperarRelatorioEstoqueSingulare();
             });
 
             return Accepted(new { message = "Processo adicionado à fila!" });
@@ -104,8 +106,13 @@ namespace WebApi.Controllers
         [ProducesResponseType(202), ProducesResponseType(400)]
         public IActionResult ProcessarArquivosEstoqueSingulare()
         {
-            Task.Run(() => _webhookService.ProcessarArquivosEstoqueSingulare());
-            return Accepted(new { message = "Request accepted and is being processed in the background." });
+            _backgroundService.AdicionarProcesso(async (serviceProviderNew) =>
+            {
+                var webhookService = serviceProviderNew.GetRequiredService<WebhookService>();
+                await webhookService.ProcessarArquivosEstoqueSingulare();
+            });
+
+            return Accepted(new { message = "Processo adicionado à fila!" });
         }
     }
 }

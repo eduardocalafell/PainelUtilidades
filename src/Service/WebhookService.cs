@@ -14,7 +14,8 @@ using CsvHelper.Configuration;
 public class WebhookService
 {
     private readonly AppDbContext _context;
-    private readonly IServiceProvider _provider;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly HttpClient _client;
     private readonly IConfiguration Configuration;
     private readonly List<DateTime> feriadosAnbima = new List<DateTime>
     {
@@ -31,10 +32,11 @@ public class WebhookService
         new DateTime(2024, 12, 25) // Natal
     };
 
-    public WebhookService(AppDbContext context, IServiceProvider provider)
+    public WebhookService(AppDbContext context, IServiceScopeFactory serviceScopeFactory)
     {
         _context = context;
-        _provider = provider;
+        _scopeFactory = serviceScopeFactory;
+        _client = new HttpClient();
         Configuration = new ConfigurationBuilder()
             .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
             .AddJsonFile("appsettings.json")
@@ -67,7 +69,7 @@ public class WebhookService
 
     public async Task RecuperarRelatorioEstoqueSingulare()
     {
-        using var scope = _provider.CreateScope();
+        using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var listaFundos = context.tb_fato_carteira.GroupBy(g => g.cnpj_fundo).Select(s => s.Key).ToList();
@@ -141,12 +143,11 @@ public class WebhookService
         }
     }
 
-    public Task ProcessarArquivosEstoqueSingulare()
+    public async Task ProcessarArquivosEstoqueSingulare()
     {
-        using (var scope = _provider.CreateScope())
+        using (var scope = _scopeFactory.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            HttpClient httpClient = new HttpClient();
 
             var arquivosProcessar = context.tb_aux_callback_estoque_singulare.Where(x => !x.IsProcessado).ToList();
 
@@ -156,8 +157,15 @@ public class WebhookService
 
                 foreach (var arquivo in arquivosProcessar)
                 {
-                    var content = httpClient.GetAsync(arquivo.FileLink).Result.Content.ReadAsStream();
-                    content.CopyTo(ms);
+                    var response = await _client.GetAsync(arquivo.FileLink);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"Erro ao baixar arquivo: {arquivo.FileLink}");
+                        continue;
+                    }
+
+                    await using var contentStream = await response.Content.ReadAsStreamAsync();
+                    await contentStream.CopyToAsync(ms);
                     ms.Position = 0;
 
                     using var reader = new StreamReader(ms);
@@ -252,12 +260,10 @@ public class WebhookService
                     arquivo.IsProcessado = true;
 
                     context.tb_aux_callback_estoque_singulare.Update(arquivo);
-                    context.SaveChanges();
+                    await context.SaveChangesAsync();
                 }
             }
         }
-
-        return Task.CompletedTask;
     }
 
     private static string ObterDataUtilD2(List<DateTime> feriados, DateTime? dataInicial = null)
