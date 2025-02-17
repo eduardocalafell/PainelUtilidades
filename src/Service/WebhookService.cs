@@ -151,14 +151,19 @@ public class WebhookService
         {
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var arquivosProcessar = context.tb_aux_callback_estoque_singulare.Where(x => !x.IsProcessado).ToList();
+            var arquivosProcessar = context.tb_aux_callback_estoque_singulare
+                .Where(x => !x.IsProcessado)
+                .ToList();
 
-            if (arquivosProcessar.Count > 0)
+            if (arquivosProcessar.Count == 0)
+                return;
+
+            foreach (var arquivo in arquivosProcessar)
             {
-                MemoryStream ms = new MemoryStream();
-
-                foreach (var arquivo in arquivosProcessar)
+                try
                 {
+                    using var ms = new MemoryStream();
+
                     var response = await _client.GetAsync(arquivo.FileLink);
                     if (!response.IsSuccessStatusCode)
                     {
@@ -174,7 +179,7 @@ public class WebhookService
                     using var csv = new CsvReader(reader, new CsvConfiguration
                     {
                         Delimiter = ";",
-                        HasHeaderRecord = true,
+                        HasHeaderRecord = true
                     });
 
                     var estoque = csv.GetRecords<EstoqueCsv>().ToList();
@@ -213,56 +218,27 @@ public class WebhookService
                             coobrigacao = titulo.coobrigacao
                         };
 
-                        if (!context.tb_stg_estoque_singulare_full.Select(x => x.seu_numero).Contains(linhaEstoque.seu_numero))
+                        var updateEstoque = context.tb_stg_estoque_singulare_full
+                            .FirstOrDefault(x => x.seu_numero == linhaEstoque.seu_numero);
+
+                        if (updateEstoque == null)
                         {
                             context.tb_stg_estoque_singulare_full.Add(linhaEstoque);
                         }
                         else
                         {
-                            var updateEstoque = context.tb_stg_estoque_singulare_full.FirstOrDefault(x => x.seu_numero == linhaEstoque.seu_numero);
-
-                            if (updateEstoque != null)
-                            {
-                                // Atualiza as propriedades desejadas
-                                updateEstoque.nome_fundo = linhaEstoque.nome_fundo;
-                                updateEstoque.doc_fundo = linhaEstoque.doc_fundo;
-                                updateEstoque.data_fundo = linhaEstoque.data_fundo;
-                                updateEstoque.nome_originador = linhaEstoque.nome_originador;
-                                updateEstoque.doc_originador = linhaEstoque.doc_originador;
-                                updateEstoque.nome_cedente = linhaEstoque.nome_cedente;
-                                updateEstoque.doc_cedente = linhaEstoque.doc_cedente;
-                                updateEstoque.nome_sacado = linhaEstoque.nome_sacado;
-                                updateEstoque.doc_sacado = linhaEstoque.doc_sacado;
-                                updateEstoque.nu_documento = linhaEstoque.nu_documento;
-                                updateEstoque.tipo_recebivel = linhaEstoque.tipo_recebivel;
-                                updateEstoque.valor_nominal = linhaEstoque.valor_nominal;
-                                updateEstoque.valor_presente = linhaEstoque.valor_presente;
-                                updateEstoque.valor_aquisicao = linhaEstoque.valor_aquisicao;
-                                updateEstoque.valor_pdd = linhaEstoque.valor_pdd;
-                                updateEstoque.faixa_pdd = linhaEstoque.faixa_pdd;
-                                updateEstoque.data_referencia = linhaEstoque.data_referencia;
-                                updateEstoque.data_vencimento_original = linhaEstoque.data_vencimento_original;
-                                updateEstoque.data_vencimento_ajustada = linhaEstoque.data_vencimento_ajustada;
-                                updateEstoque.data_emissao = linhaEstoque.data_emissao;
-                                updateEstoque.data_aquisicao = linhaEstoque.data_aquisicao;
-                                updateEstoque.prazo = linhaEstoque.prazo;
-                                updateEstoque.prazo_atual = linhaEstoque.prazo_atual;
-                                updateEstoque.situacao_recebivel = linhaEstoque.situacao_recebivel;
-                                updateEstoque.taxa_cessao = linhaEstoque.taxa_cessao;
-                                updateEstoque.tx_recebivel = linhaEstoque.tx_recebivel;
-                                updateEstoque.coobrigacao = linhaEstoque.coobrigacao;
-                            }
-
+                            context.Entry(updateEstoque).CurrentValues.SetValues(linhaEstoque);
                             context.tb_stg_estoque_singulare_full.Update(updateEstoque);
                         }
                     }
 
-                    reader.Close();
-
                     arquivo.IsProcessado = true;
-
                     context.tb_aux_callback_estoque_singulare.Update(arquivo);
                     await context.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Erro ao processar arquivo {arquivo.FileLink}: {ex.Message}");
                 }
             }
         }
