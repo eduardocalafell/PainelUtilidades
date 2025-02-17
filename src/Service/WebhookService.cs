@@ -99,9 +99,9 @@ public class WebhookService
                 {
                     var dataPesquisa = ObterDataUtilD2(feriadosAnbima, dataFinal);
 
-                    if (!listaProcessados.Any(x => x.DataSolicitada == dataPesquisa && x.Fundo == fundo))
+                    if (listaProcessados.FirstOrDefault(x => x.DataSolicitada == dataPesquisa && x.Fundo == fundo) is null)
                     {
-                        Debug.WriteLine($"Começando execução para a data {dataPesquisa}", "Aviso");
+                        Console.WriteLine($"Começando execução para a data {dataPesquisa} do fundo {fundo}", "Aviso");
 
                         var obj = new
                         {
@@ -124,17 +124,19 @@ public class WebhookService
 
                             await context.SaveChangesAsync();
 
+                            Console.WriteLine($"Inserido registo para a data {dataPesquisa} do fundo {fundo}. Aguardando 3s...", "Aviso");
+
                             await Task.Delay(3000); // Aguarda um pouco antes de processar o próximo
                         }
                         else
                         {
                             var error = await response.Content.ReadAsStringAsync();
-                            Console.WriteLine($"Erro ao processar fundo {fundo}: {error}");
+                            Console.WriteLine($"Erro ao processar fundo {fundo} - mensagem da singulare: {error}");
                         }
                     }
                     else
                     {
-                        Debug.WriteLine($"Relatório para a data {dataPesquisa} e fundo {fundo} já recuperado.", "Aviso");
+                        Console.WriteLine($"Relatório para a data {dataPesquisa} e fundo {fundo} já recuperado.", "Aviso");
                     }
                 }
 
