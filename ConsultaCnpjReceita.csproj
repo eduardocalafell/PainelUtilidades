@@ -39,7 +39,7 @@
   <ItemGroup>
     <Content Include="usr_m8">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>wwwroot\usr_m8</Link>
+      <Link>usr_m8</Link>
     </Content>
   </ItemGroup>
 </Project>
