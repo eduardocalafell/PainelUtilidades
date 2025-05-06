@@ -1,8 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using CsvHelper;
+using CsvHelper.Configuration;
 
 namespace ConsultaCnpjReceita.Model
 {
@@ -40,41 +38,42 @@ namespace ConsultaCnpjReceita.Model
 
     public class EstoqueCsv
     {
-        public string nomeFundo { get; set; }
-        public string docFundo { get; set; }
-        public string dataFundo { get; set; }
-        public string nomeGestor { get; set; }
-        public string docGestor { get; set; }
-        public string nomeOriginador { get; set; }
-        public string docOriginador { get; set; }
-        public string nomeCedente { get; set; }
-        public string docCedente { get; set; }
-        public string nomeSacado { get; set; }
-        public string docSacado { get; set; }
-        public string seuNumero { get; set; }
-        public string numeroDocumento { get; set; }
-        public string tipoRecebivel { get; set; }
-        public string valorNominal { get; set; }
-        public string valorPresente { get; set; }
-        public string valorAquisicao { get; set; }
-        public string valorPdd { get; set; }
-        public string faixaPdd { get; set; }
-        public string dataReferencia { get; set; }
-        public string dataVencimentoOriginal { get; set; }
-        public string dataVencimentoAjustada { get; set; }
-        public string dataEmissao { get; set; }
-        public string dataAquisicao { get; set; }
-        public string prazo { get; set; }
-        public string prazoAnual { get; set; }
-        public string situacaoRecebivel { get; set; }
-        public string taxaCessao { get; set; }
-        public string taxaRecebivel { get; set; }
-        public string coobrigacao { get; set; }
+        public string NM_FUNDO { get; set; }
+        public string NU_CNPJ { get; set; }
+        public string DATA_FUNDO { get; set; }
+        public string NOME_ORIGINADOR { get; set; }
+        public string DOC_ORIGINADOR { get; set; }
+        public string NOME_CEDENTE { get; set; }
+        public string DOC_CEDENTE { get; set; }
+        public string NOME_SACADO { get; set; }
+        public string DOC_SACADO { get; set; }
+        public string SEU_NUMERO { get; set; }
+        public string NU_DOCUMENTO { get; set; }
+        public string TIPO_RECEBIVEL { get; set; }
+        public string VALOR_NOMINAL { get; set; }
+        public string VALOR_PRESENTE { get; set; }
+        public string VALOR_AQUISICAO { get; set; }
+        public string VALOR_PDD { get; set; }
+        public string FAIXA_PDD { get; set; }
+        public string DATA_REFERENCIA { get; set; }
+        public string DATA_VENCIMENTO_ORIGINAL { get; set; }
+        public string DATA_VENCIMENTO_AJUSTADA { get; set; }
+        public string DATA_EMISSAO { get; set; }
+        public string DATA_AQUISICAO { get; set; }
+        public string PRAZO { get; set; }
+        public string PRAZO_ATUAL { get; set; }
+        public string SITUACAO_RECEBIVEL { get; set; }
+        public string TAXA_CESSAO { get; set; }
+        public string TX_RECEBIVEL { get; set; }
+        public string COOBRIGACAO { get; set; }
+        public string LINHA { get; set; }
     }
 
-    [PrimaryKey("seu_numero")]
+
+    [PrimaryKey("Id")]
     public class EstoqueModel
     {
+        public Guid Id { get; set; } = Guid.NewGuid();
         public string nome_fundo { get; set; }
         public string doc_fundo { get; set; }
         public string data_fundo { get; set; }

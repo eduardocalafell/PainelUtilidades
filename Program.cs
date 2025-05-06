@@ -2,7 +2,6 @@ using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using Data.AppDbContext;
 using Microsoft.EntityFrameworkCore;
-using ConsultaCnpjReceita.Model;
 using ConsultaCnpjReceita.Service;
 
 var builder = WebApplication.CreateBuilder(args);
