@@ -67,13 +67,18 @@ public class SftpService
 
                             foreach (var arquivoEstoque in arquivosEstoque)
                             {
-                                Console.WriteLine($"Processando data: {arquivoEstoque.Name}");
+                                Console.WriteLine($"Processando arquivo: {arquivoEstoque.Name}");
 
                                 if (context.tb_aux_relatorios_processados.FirstOrDefault(x => x.NomeArquivo == arquivoEstoque.FullName) is null)
                                 {
+                                    if (!sftp.IsConnected) sftp.Connect();
+                                    else Console.WriteLine($"SFTP já está conectado! Baixando arquivo: {arquivoEstoque.FullName}");
+
                                     using MemoryStream ms = new MemoryStream();
                                     sftp.DownloadFile(arquivoEstoque.FullName, ms);
                                     ms.Position = 0;
+
+                                    Console.WriteLine("Arquivo baixado com sucesso!");
 
                                     using var reader = new StreamReader(ms);
                                     using var csv = new CsvReader(reader, new CsvConfiguration
