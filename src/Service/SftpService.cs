@@ -34,7 +34,7 @@ public class SftpService
 
         string host = "sftp.singulare.com.br"; // Endereço do servidor SFTP
         string username = "usr_m8"; // Usuário do SFTP
-        string privateKeyPath = @$"{Environment.CurrentDirectory}\usr_m8"; // Caminho da chave privada
+        string privateKeyPath = @$"{Environment.CurrentDirectory}/usr_m8"; // Caminho da chave privada
 
         try
         {
