@@ -15,30 +15,28 @@ namespace ConsultaCnpjReceita.Service;
 
 public class UtilidadesService
 {
-    private readonly AppDbContext _context;
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IServiceScopeFactory _scopeFactory;
     private static readonly object _logLock = new object();
     private IConfiguration Configuration { get; set; }
     private readonly List<DateTime> feriadosAnbima = new List<DateTime>
-{
-    new DateTime(2024, 1, 1),  // Confraternização Universal
-    new DateTime(2024, 2, 12), // Carnaval
-    new DateTime(2024, 2, 13), // Carnaval
-    new DateTime(2024, 3, 29), // Sexta-feira Santa
-    new DateTime(2024, 4, 21), // Tiradentes
-    new DateTime(2024, 5, 1),  // Dia do Trabalho
-    new DateTime(2024, 9, 7),  // Independência do Brasil
-    new DateTime(2024, 10, 12), // Nossa Senhora Aparecida
-    new DateTime(2024, 11, 2), // Finados
-    new DateTime(2024, 11, 15), // Proclamação da República
-    new DateTime(2024, 12, 25) // Natal
-};
-
-
-    public UtilidadesService(AppDbContext context, IServiceProvider serviceProvider)
     {
-        _context = context;
-        _serviceProvider = serviceProvider;
+        new DateTime(2024, 1, 1),  // Confraternização Universal
+        new DateTime(2024, 2, 12), // Carnaval
+        new DateTime(2024, 2, 13), // Carnaval
+        new DateTime(2024, 3, 29), // Sexta-feira Santa
+        new DateTime(2024, 4, 21), // Tiradentes
+        new DateTime(2024, 5, 1),  // Dia do Trabalho
+        new DateTime(2024, 9, 7),  // Independência do Brasil
+        new DateTime(2024, 10, 12), // Nossa Senhora Aparecida
+        new DateTime(2024, 11, 2), // Finados
+        new DateTime(2024, 11, 15), // Proclamação da República
+        new DateTime(2024, 12, 25) // Natal
+    };
+
+
+    public UtilidadesService(IServiceScopeFactory scopeFactory)
+    {
+        _scopeFactory = scopeFactory;
 
         Configuration = new ConfigurationBuilder()
                     .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
@@ -46,249 +44,143 @@ public class UtilidadesService
                     .Build();
     }
 
-    public async Task<string> IniciarConsultarListaCnpj()
+    public Task ConsultarListaCnpj()
     {
-        await Task.Run(() => ConsultarListaCnpj());
-        return "Consulta à receita sendo executada...";
-    }
+        var scope = _scopeFactory.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    public async Task ConsultarListaCnpj()
-    {
-        var listaCnpjConsulta = new List<string>();
+        var url = Configuration.GetSection("ReceitaWs:Url").Value;
+        var token = Configuration.GetSection("ReceitaWs:Token").Value;
+        HttpClient client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        using (var scope = _serviceProvider.CreateScope())
+        var listaCnpjExistente = context.tb_aux_Retorno_Receita.Select(x => FormatarCnpj(x.cnpj)).ToList();
+
+        var cnpjEstoque = new List<string>();
+        var take = 10000;
+        var skip = 0;
+
+        do
         {
-            var scopedContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            cnpjEstoque = context.tb_stg_estoque_singulare_full.AsNoTracking()
+                                                                .Skip(skip).Take(take).ToList()
+                                                                .SelectMany(s => new[] { s.doc_cedente.Replace("/", "").Replace(".", "").Replace("-", ""),
+                                                                    s.doc_sacado.Replace("/", "").Replace(".", "").Replace("-", "") })
+                                                                .Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
 
-            // Titulos Privados
-            var ListaTitulosPrivados = await scopedContext.tb_ods_titulo_privado_carteira.Select(x => new CnpjModelDTO
+            foreach (var item in cnpjEstoque)
             {
-                CnpjOriginador = FormatarCnpj(x.CnpjEmissor)
-            }).Distinct().ToListAsync();
+                if (listaCnpjExistente.Contains(item)) continue;
 
-            ListaTitulosPrivados.ForEach(f =>
-            {
-                listaCnpjConsulta.Add(f.CnpjOriginador);
-            });
-            // Fim Titulos Privados
-
-            /*             // Finaxis Estoque
-                        var ListaEstoqueFinaxis = await scopedContext.tb_stg_estoque_finaxis_full.Select(x => new CnpjModelDTO
-                        {
-                            CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
-                            CnpjCedente = FormatarCnpj(x.CnpjCedente),
-                            CnpjSacado = FormatarCnpj(x.CnpjSacado),
-                        }).ToListAsync();
-
-                        ListaEstoqueFinaxis.ForEach(f =>
-                        {
-                            listaCnpjConsulta.Add(f.CnpjOriginador);
-                            listaCnpjConsulta.Add(f.CnpjCedente);
-                            listaCnpjConsulta.Add(f.CnpjSacado);
-                        });
-                        // Fim Finaxis Estoque
-
-                        // Hemera Estoque
-                        var ListaEstoqueHemera = await scopedContext.tb_stg_estoque_hemera_full.Select(x => new CnpjModelDTO
-                        {
-                            CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
-                            CnpjCedente = FormatarCnpj(x.CnpjCedente),
-                            CnpjSacado = FormatarCnpj(x.CnpjSacado),
-                        }).ToListAsync();
-
-                        ListaEstoqueHemera.ForEach(f =>
-                        {
-                            listaCnpjConsulta.Add(f.CnpjOriginador);
-                            listaCnpjConsulta.Add(f.CnpjCedente);
-                            listaCnpjConsulta.Add(f.CnpjSacado);
-                        });
-                        // Fim Hemera Estoque
-
-                        // Singulare Estoque
-                        var ListaEstoqueSingulare = await scopedContext.tb_stg_estoque_singulare_full.Select(x => new CnpjModelDTO
-                        {
-                            CnpjOriginador = FormatarCnpj(x.CnpjOriginador),
-                            CnpjCedente = FormatarCnpj(x.CnpjCedente),
-                            CnpjSacado = FormatarCnpj(x.CnpjSacado),
-                        }).ToListAsync();
-
-                        ListaEstoqueSingulare.ForEach(f =>
-                        {
-                            listaCnpjConsulta.Add(f.CnpjOriginador);
-                            listaCnpjConsulta.Add(f.CnpjCedente);
-                            listaCnpjConsulta.Add(f.CnpjSacado);
-                        });
-                        // Fim Singulare Estoque
-
-                        // Hemera Liquidados
-                        var ListaLiquidadosHemera = await scopedContext.tb_stg_estoque_singulare_full.Select(x => new CnpjModelDTO
-                        {
-                            CnpjCedente = FormatarCnpj(x.CnpjCedente),
-                            CnpjSacado = FormatarCnpj(x.CnpjSacado),
-                        }).ToListAsync();
-
-                        ListaLiquidadosHemera.ForEach(f =>
-                        {
-                            listaCnpjConsulta.Add(f.CnpjCedente);
-                            listaCnpjConsulta.Add(f.CnpjSacado);
-                        });
-                        // Fim Hemera Liquidados
-
-                        // Finaxis Liquidados
-                        var ListaLiquidadosFinaxis = await scopedContext.tb_stg_liquidados_finaxis_full.Select(x => new CnpjModelDTO
-                        {
-                            CnpjCedente = FormatarCnpj(x.CnpjCedente),
-                            CnpjSacado = FormatarCnpj(x.CnpjSacado),
-                        }).ToListAsync();
-
-                        ListaLiquidadosFinaxis.ForEach(f =>
-                        {
-                            listaCnpjConsulta.Add(f.CnpjCedente);
-                            listaCnpjConsulta.Add(f.CnpjSacado);
-                        });
-                        // Fim Finaxis Liquidados
-
-                        // Finaxis Liquidados Recompra Hemera
-                        var ListaLiquidadosRecompraHemera = await scopedContext.tb_stg_liquidados_recompra_hemera_full.Select(x => new CnpjModelDTO
-                        {
-                            CnpjCedente = FormatarCnpj(x.CnpjCedente),
-                            CnpjSacado = FormatarCnpj(x.CnpjSacado),
-                        }).ToListAsync();
-
-                        ListaLiquidadosRecompraHemera.ForEach(f =>
-                        {
-                            listaCnpjConsulta.Add(f.CnpjCedente);
-                            listaCnpjConsulta.Add(f.CnpjSacado);
-                        });
-                        // Fim Hemera Liquidados Recompra
-
-                        // Singulare Liquidados
-                        var ListaLiquidadosSingulare = await scopedContext.tb_stg_liquidados_singulare_full.Select(x => new CnpjModelDTO
-                        {
-                            CnpjCedente = FormatarCnpj(x.CnpjCedente),
-                            CnpjSacado = FormatarCnpj(x.CnpjSacado),
-                        }).ToListAsync();
-
-                        ListaLiquidadosSingulare.ForEach(f =>
-                        {
-                            listaCnpjConsulta.Add(f.CnpjCedente);
-                            listaCnpjConsulta.Add(f.CnpjSacado);
-                        });
-                        // Fim Singulare Liquidados */
-
-            var url = Configuration.GetSection("ReceitaWs:Url").Value;
-            HttpClient client = new HttpClient();
-
-            var listaCnpjExistente = await scopedContext.tb_aux_Retorno_Receita.Select(x => FormatarCnpj(x.cnpj)).ToListAsync();
-
-            foreach (var item in listaCnpjConsulta)
-            {
-                var response = await client.GetAsync($"{url}{item}");
-                if (response.IsSuccessStatusCode && !listaCnpjExistente.Contains(item))
+                var response = client.GetAsync($"{url}{item}/days/10").Result;
+                if (response.IsSuccessStatusCode)
                 {
-                    var json = await response.Content.ReadAsStringAsync();
+                    var json = response.Content.ReadAsStringAsync().Result;
                     var retorno = JsonConvert.DeserializeObject<Root>(json);
                     if (retorno.cnpj is not null)
                     {
                         listaCnpjExistente.Add(item);
-                        scopedContext.tb_aux_Retorno_Receita.Add(retorno);
-                        scopedContext.SaveChanges();
+                        context.tb_aux_Retorno_Receita.Add(retorno);
+                        context.SaveChanges();
                     }
                 }
-
-                await Task.Delay(20500);
             }
-        }
+
+            take += 10000;
+            skip += 10000;
+
+        } while (cnpjEstoque.Count > 0);
+
+        return Task.CompletedTask;
     }
 
-    public async Task<string> IniciarRecuperacaoXmlAnbimaAsync()
-    {
-        await Task.Run(() => RecuperarXmlAnbima());
-        return "A operação de recuperação do XML foi iniciada com sucesso!";
-    }
+    /*  public async Task<string> IniciarRecuperacaoXmlAnbimaAsync()
+     {
+         await Task.Run(() => RecuperarXmlAnbima());
+         return "A operação de recuperação do XML foi iniciada com sucesso!";
+     }
 
-    private async Task RecuperarXmlAnbima()
-    {
-        using (var scope = _serviceProvider.CreateScope())
-        {
-            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+     private async Task RecuperarXmlAnbima()
+     {
+         using (var scope = _serviceProvider.CreateScope())
+         {
+             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var url = Configuration.GetSection("Singulare:Url").Value;
-            var user = Configuration.GetSection("Singulare:Usuario").Value;
-            var pswr = Configuration.GetSection("Singulare:Senha").Value;
-            var xmlExistentes = context.tb_aux_retorno_xml_anbima.ToList();
-            var listaFidcs = RecuperarFidcs();
+             var url = Configuration.GetSection("Singulare:Url").Value;
+             var user = Configuration.GetSection("Singulare:Usuario").Value;
+             var pswr = Configuration.GetSection("Singulare:Senha").Value;
+             var xmlExistentes = context.tb_aux_retorno_xml_anbima.ToList();
+             var listaFidcs = RecuperarFidcs();
 
-            using HttpClient client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{pswr}")));
+             using HttpClient client = new HttpClient();
+             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{pswr}")));
 
-            var response = await client.PostAsync(url + "painel/token/api", null);
-            var authToken = JsonConvert.DeserializeObject<SingulareApiAuthResponse>(await response.Content.ReadAsStringAsync()).Token;
+             var response = await client.PostAsync(url + "painel/token/api", null);
+             var authToken = JsonConvert.DeserializeObject<SingulareApiAuthResponse>(await response.Content.ReadAsStringAsync()).Token;
 
-            client.DefaultRequestHeaders.Authorization = null;
-            client.DefaultRequestHeaders.Add("x-api-key", authToken);
+             client.DefaultRequestHeaders.Authorization = null;
+             client.DefaultRequestHeaders.Add("x-api-key", authToken);
 
-            DateTime dataInicial = DateTime.Today;
-            //DateTime dataFinal = new DateTime(2024, 10, 1);
-            DateTime dataFinal = DateTime.Today.AddDays(-1);
+             DateTime dataInicial = DateTime.Today;
+             //DateTime dataFinal = new DateTime(2024, 10, 1);
+             DateTime dataFinal = DateTime.Today.AddDays(-1);
 
-            while (dataInicial > dataFinal)
-            {
-                var dataPesquisa = ObterDataUtilD2(feriadosAnbima, dataInicial);
-                Debug.WriteLine($"Começando execução para a data {dataPesquisa}", "Aviso");
+             while (dataInicial > dataFinal)
+             {
+                 var dataPesquisa = ObterDataUtilD2(feriadosAnbima, dataInicial);
+                 Debug.WriteLine($"Começando execução para a data {dataPesquisa}", "Aviso");
 
-                foreach (var f in listaFidcs)
-                {
-                    var retry = 0;
-                    var registroExistente = xmlExistentes.FirstOrDefault(x => x.NomeFundo == f && x.DataCarteira == dataPesquisa);
-                    if (registroExistente is null)
-                    {
-                        do
-                        {
-                            response = await client.GetAsync(url + $"netreport/report/xml-anbima/{f}/{dataPesquisa}");
-                            if (response.IsSuccessStatusCode)
-                            {
-                                var ret = await response.Content.ReadAsStringAsync();
-                                var novoXml = new NovoXmlAnbima
-                                {
-                                    Id = Guid.NewGuid(),
-                                    NomeFundo = f,
-                                    DataCarteira = dataPesquisa,
-                                    Xml = ret
-                                };
+                 foreach (var f in listaFidcs)
+                 {
+                     var retry = 0;
+                     var registroExistente = xmlExistentes.FirstOrDefault(x => x.NomeFundo == f && x.DataCarteira == dataPesquisa);
+                     if (registroExistente is null)
+                     {
+                         do
+                         {
+                             response = await client.GetAsync(url + $"netreport/report/xml-anbima/{f}/{dataPesquisa}");
+                             if (response.IsSuccessStatusCode)
+                             {
+                                 var ret = await response.Content.ReadAsStringAsync();
+                                 var novoXml = new NovoXmlAnbima
+                                 {
+                                     Id = Guid.NewGuid(),
+                                     NomeFundo = f,
+                                     DataCarteira = dataPesquisa,
+                                     Xml = ret
+                                 };
 
-                                try
-                                {
-                                    context.tb_aux_retorno_xml_anbima.Add(novoXml);
-                                    xmlExistentes.Add(novoXml);
-                                    context.SaveChanges();
-                                    Debug.WriteLine($"Adicionado {f} para a data {dataPesquisa}", "Aviso");
-                                }
-                                catch (Exception ex)
-                                {
-                                    Debug.WriteLine(ex.InnerException);
-                                }
-                            }
-                            else
-                            {
-                                retry++;
-                                Debug.WriteLine($"{f} não encontrado para a data {dataPesquisa}", "Aviso");
-                                await Task.Delay(500);
-                            }
-                        } while (!response.IsSuccessStatusCode && retry <= 0);
-                    }
-                    else
-                    {
-                        Debug.WriteLine($"{f} já inserido para a data {dataPesquisa}", "Aviso");
-                    }
-                }
+                                 try
+                                 {
+                                     context.tb_aux_retorno_xml_anbima.Add(novoXml);
+                                     xmlExistentes.Add(novoXml);
+                                     context.SaveChanges();
+                                     Debug.WriteLine($"Adicionado {f} para a data {dataPesquisa}", "Aviso");
+                                 }
+                                 catch (Exception ex)
+                                 {
+                                     Debug.WriteLine(ex.InnerException);
+                                 }
+                             }
+                             else
+                             {
+                                 retry++;
+                                 Debug.WriteLine($"{f} não encontrado para a data {dataPesquisa}", "Aviso");
+                                 await Task.Delay(500);
+                             }
+                         } while (!response.IsSuccessStatusCode && retry <= 0);
+                     }
+                     else
+                     {
+                         Debug.WriteLine($"{f} já inserido para a data {dataPesquisa}", "Aviso");
+                     }
+                 }
 
-                dataInicial = dataInicial.AddDays(-1);
-            }
-        }
+                 dataInicial = dataInicial.AddDays(-1);
+             }
+         }
 
-    }
-
+     } */
 
     private static string FormatarCnpj(string cnpj)
     {

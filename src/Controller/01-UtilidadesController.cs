@@ -29,7 +29,7 @@ namespace WebApi.Controllers
             _serviceProvider = serviceProvider;
             _backgroundService = processamentoBackgroundService;
             _scopeFactory = serviceScopeFactory;
-            _utilidadesService = new UtilidadesService(_context, _serviceProvider);
+            _utilidadesService = new UtilidadesService(_scopeFactory);
             _webhookService = new WebhookService(_context, _scopeFactory);
         }
 
@@ -41,33 +41,29 @@ namespace WebApi.Controllers
         [ProducesResponseType(202), ProducesResponseType(400)]
         public IActionResult ConsultarListaCnpj()
         {
-            Task.Run(async () =>
-            {
-                // Execute a lógica longa aqui
-                await _utilidadesService.IniciarConsultarListaCnpj();
-            });
+            Task.Run(_utilidadesService.ConsultarListaCnpj);
 
-            // Retorne 202 Accepted imediatamente sem caracteres especiais
-            return Accepted(new { message = "Request accepted and is being processed in the background." });
+            return Accepted(new { message = "Solicitação recebida, processando CNPJs na base de dados." });
         }
 
-        /// <summary>
-        /// Recupera os XMLs de todos os fundos cadastrados.
-        /// </summary>
-        /// <returns></returns>
-        [HttpPost("RecuperarXmlAnbima")]
-        [ProducesResponseType(202), ProducesResponseType(400)]
-        public IActionResult RecuperarXmlAnbima()
-        {
-            Task.Run(async () =>
-            {
-                // Execute a lógica longa aqui
-                await _utilidadesService.IniciarRecuperacaoXmlAnbimaAsync();
-            });
+        /* 
+                /// <summary>
+                /// Recupera os XMLs de todos os fundos cadastrados.
+                /// </summary>
+                /// <returns></returns>
+                [HttpPost("RecuperarXmlAnbima")]
+                [ProducesResponseType(202), ProducesResponseType(400)]
+                public IActionResult RecuperarXmlAnbima()
+                {
+                    Task.Run(async () =>
+                    {
+                        // Execute a lógica longa aqui
+                        await _utilidadesService.IniciarRecuperacaoXmlAnbimaAsync();
+                    });
 
-            // Retorne 202 Accepted imediatamente sem caracteres especiais
-            return Accepted(new { message = "Request accepted and is being processed in the background." });
-        }
+                    // Retorne 202 Accepted imediatamente sem caracteres especiais
+                    return Accepted(new { message = "Request accepted and is being processed in the background." });
+                } */
 
         /// <summary>
         /// Retorno para callback de solicitação do relatório de Estoque.

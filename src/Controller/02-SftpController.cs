@@ -33,12 +33,8 @@ namespace WebApi.Controllers
         [ProducesResponseType(202), ProducesResponseType(400)]
         public IActionResult RecuperarDadosSftpSingulareEstoque()
         {
-            Task.Run(async () =>
-            {
-                await _sftpService.RecuperarDadosSftpSingulareEstoque();
-            });
+            Task.Run(_sftpService.RecuperarDadosSftpSingulareEstoque);
 
-            // Retorne 202 Accepted imediatamente sem caracteres especiais
             return Accepted(new { message = "Executando ação de integração com os arquivos de SFTP." });
         }
     }
