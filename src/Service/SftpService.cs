@@ -163,7 +163,7 @@ public class SftpService
     }
 
 
-    public async Task RecuperarDadosSftpSingulareEstoqueParalelo()
+    public Task RecuperarDadosSftpSingulareEstoqueParalelo()
     {
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -228,9 +228,9 @@ public class SftpService
 
                 foreach (var file in batch)
                 {
-                    await semaphore.WaitAsync();
+                    semaphore.Wait();
 
-                    var task = Task.Run(async () =>
+                    var task = Task.Run(() =>
                     {
                         try
                         {
@@ -314,7 +314,7 @@ public class SftpService
                     tasks.Add(task);
                 }
 
-                await Task.WhenAll(tasks);
+                Task.WhenAll(tasks);
 
                 // Persistência no banco de dados — após os downloads deste lote
                 foreach (var (estoques, metainfo) in batchResults)
@@ -323,14 +323,16 @@ public class SftpService
                     context.tb_aux_relatorios_processados.Add(metainfo);
                 }
 
-                await context.SaveChangesAsync();
+                context.SaveChanges();
                 Console.WriteLine($"Lote de {batchResults.Count} arquivos salvo com sucesso no banco.");
             }
+
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Erro: {ex.Message}");
-            await Task.FromException(ex);
+            return Task.FromException(ex);
         }
     }
 }
