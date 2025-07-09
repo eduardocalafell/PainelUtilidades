@@ -72,13 +72,27 @@ public class UtilidadesService
             {
                 if (listaCnpjExistente.Contains(item)) continue;
 
-                var response = client.GetAsync($"{url}{item}/days/10").Result;
+                var response = client.GetAsync($"{url}{item}/days/0").Result;
                 if (response.IsSuccessStatusCode)
                 {
                     var json = response.Content.ReadAsStringAsync().Result;
                     var retorno = JsonConvert.DeserializeObject<Root>(json);
                     if (retorno.cnpj is not null)
                     {
+                        if (retorno.atividade_principal is not null && retorno?.atividade_principal?.Count > 0)
+                        {
+                            retorno.atividade_principal.ForEach(f => retorno.cnae_primario += $"{f.code}: {f.text.ToUpperInvariant()} | ");
+                            retorno.cnae_primario = retorno.cnae_primario.Remove(retorno.cnae_primario.Length - 3, 3);
+                        }
+
+                        if (retorno.atividade_secundaria is not null && retorno?.atividade_secundaria?.Count > 0)
+                        {
+                            retorno.atividade_secundaria.ForEach(f => retorno.cnae_secundario += $"{f.code}: {f.text.ToUpperInvariant()} | ");
+                            retorno.cnae_secundario = retorno.cnae_secundario.Remove(retorno.cnae_secundario.Length - 3, 3);
+                        }
+
+                        retorno.cnpj = retorno.cnpj.Replace("/", "").Replace(".", "").Replace("-", "");
+
                         listaCnpjExistente.Add(item);
                         context.tb_aux_Retorno_Receita.Add(retorno);
                         context.SaveChanges();

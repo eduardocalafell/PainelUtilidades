@@ -2,13 +2,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ConsultaCnpjReceita.Model;
 
-// Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
-public class AtividadePrincipal
-{
-    public string code { get; set; }
-    public string text { get; set; }
-}
-
 public class Root
 {
     public Guid Id { get; set; }
@@ -20,7 +13,11 @@ public class Root
     public string fantasia { get; set; }
     public string abertura { get; set; }
     [NotMapped]
-    public List<AtividadePrincipal> atividade_principal { get; set; }
+    public List<Atividade> atividade_principal { get; set; }
+    [NotMapped]
+    public List<Atividade> atividade_secundaria { get; set; }
+    public string? cnae_primario { get; set; }
+    public string? cnae_secundario { get; set; }
     public string natureza_juridica { get; set; }
     public string logradouro { get; set; }
     public string numero { get; set; }
@@ -33,4 +30,10 @@ public class Root
     public string telefone { get; set; }
     public string efr { get; set; }
     public string situacao { get; set; }
+}
+
+public class Atividade
+{
+    public string code { get; set; }
+    public string text { get; set; }
 }
