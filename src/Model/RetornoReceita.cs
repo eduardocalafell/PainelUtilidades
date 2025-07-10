@@ -4,8 +4,8 @@ namespace ConsultaCnpjReceita.Model;
 
 public class Root
 {
-    public Guid Id { get; set; }
-    public DateTime ultima_atualizacao { get; set; }
+    public string Id { get; set; }
+    public string ultima_atualizacao { get; set; }
     public string cnpj { get; set; }
     public string tipo { get; set; }
     public string porte { get; set; }
@@ -15,7 +15,7 @@ public class Root
     [NotMapped]
     public List<Atividade> atividade_principal { get; set; }
     [NotMapped]
-    public List<Atividade> atividade_secundaria { get; set; }
+    public List<Atividade> atividades_secundarias { get; set; }
     public string? cnae_primario { get; set; }
     public string? cnae_secundario { get; set; }
     public string natureza_juridica { get; set; }

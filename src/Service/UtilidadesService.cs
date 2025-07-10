@@ -70,32 +70,45 @@ public class UtilidadesService
 
             foreach (var item in cnpjEstoque)
             {
-                if (listaCnpjExistente.Contains(item)) continue;
-
-                var response = client.GetAsync($"{url}{item}/days/0").Result;
+                var response = client.GetAsync($"{url}{item}/days/5").Result;
                 if (response.IsSuccessStatusCode)
                 {
                     var json = response.Content.ReadAsStringAsync().Result;
                     var retorno = JsonConvert.DeserializeObject<Root>(json);
                     if (retorno.cnpj is not null)
                     {
-                        if (retorno.atividade_principal is not null && retorno?.atividade_principal?.Count > 0)
+                        if (listaCnpjExistente.Contains(item))
                         {
-                            retorno.atividade_principal.ForEach(f => retorno.cnae_primario += $"{f.code}: {f.text.ToUpperInvariant()} | ");
-                            retorno.cnae_primario = retorno.cnae_primario.Remove(retorno.cnae_primario.Length - 3, 3);
-                        }
+                            if (retorno.atividades_secundarias is not null && retorno?.atividades_secundarias?.Count > 0)
+                            {
+                                var attCnpj = context.tb_aux_Retorno_Receita.FirstOrDefault(x => x.cnpj == item);
+                                retorno.atividades_secundarias.ForEach(f => attCnpj.cnae_secundario += $"{f.code}: {f.text.ToUpperInvariant()} | ");
+                                attCnpj.cnae_secundario = attCnpj.cnae_secundario.Remove(attCnpj.cnae_secundario.Length - 3, 3);
 
-                        if (retorno.atividade_secundaria is not null && retorno?.atividade_secundaria?.Count > 0)
+                                context.tb_aux_Retorno_Receita.Update(attCnpj);
+                                context.SaveChanges();
+                            }
+                        }
+                        else
                         {
-                            retorno.atividade_secundaria.ForEach(f => retorno.cnae_secundario += $"{f.code}: {f.text.ToUpperInvariant()} | ");
-                            retorno.cnae_secundario = retorno.cnae_secundario.Remove(retorno.cnae_secundario.Length - 3, 3);
+                            if (retorno.atividade_principal is not null && retorno?.atividade_principal?.Count > 0)
+                            {
+                                retorno.atividade_principal.ForEach(f => retorno.cnae_primario += $"{f.code}: {f.text.ToUpperInvariant()} | ");
+                                retorno.cnae_primario = retorno.cnae_primario.Remove(retorno.cnae_primario.Length - 3, 3);
+                            }
+
+                            if (retorno.atividades_secundarias is not null && retorno?.atividades_secundarias?.Count > 0)
+                            {
+                                retorno.atividades_secundarias.ForEach(f => retorno.cnae_secundario += $"{f.code}: {f.text.ToUpperInvariant()} | ");
+                                retorno.cnae_secundario = retorno.cnae_secundario.Remove(retorno.cnae_secundario.Length - 3, 3);
+                            }
+
+                            retorno.cnpj = retorno.cnpj.Replace("/", "").Replace(".", "").Replace("-", "");
+
+                            listaCnpjExistente.Add(item);
+                            context.tb_aux_Retorno_Receita.Add(retorno);
+                            context.SaveChanges();
                         }
-
-                        retorno.cnpj = retorno.cnpj.Replace("/", "").Replace(".", "").Replace("-", "");
-
-                        listaCnpjExistente.Add(item);
-                        context.tb_aux_Retorno_Receita.Add(retorno);
-                        context.SaveChanges();
                     }
                 }
             }
