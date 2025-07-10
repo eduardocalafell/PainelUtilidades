@@ -4,8 +4,8 @@ namespace ConsultaCnpjReceita.Model;
 
 public class Root
 {
-    public string Id { get; set; }
-    public string ultima_atualizacao { get; set; }
+    public string? Id { get; set; } = Guid.NewGuid().ToString();
+    public string? ultima_atualizacao { get; set; }
     public string cnpj { get; set; }
     public string tipo { get; set; }
     public string porte { get; set; }
