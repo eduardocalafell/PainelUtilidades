@@ -70,7 +70,7 @@ public class UtilidadesService
 
             foreach (var item in cnpjEstoque)
             {
-                var response = client.GetAsync($"{url}{item}/days/0").Result;
+                var response = client.GetAsync($"{url}{item}/days/180").Result;
                 if (response.IsSuccessStatusCode)
                 {
                     var json = response.Content.ReadAsStringAsync().Result;
