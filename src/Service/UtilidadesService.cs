@@ -121,93 +121,86 @@ public class UtilidadesService
         return Task.CompletedTask;
     }
 
-    /*  public async Task<string> IniciarRecuperacaoXmlAnbimaAsync()
-     {
-         await Task.Run(() => RecuperarXmlAnbima());
-         return "A operação de recuperação do XML foi iniciada com sucesso!";
-     }
+    public Task RecuperarXmlAnbima()
+    {
+        var scope = _scopeFactory.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-     private async Task RecuperarXmlAnbima()
-     {
-         using (var scope = _serviceProvider.CreateScope())
-         {
-             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var url = Configuration.GetSection("Singulare:Url").Value;
+        var user = Configuration.GetSection("Singulare:Usuario").Value;
+        var pswr = Configuration.GetSection("Singulare:Senha").Value;
+        var xmlExistentes = context.tb_aux_retorno_xml_anbima.ToList();
+        var listaFidcs = RecuperarFidcs();
 
-             var url = Configuration.GetSection("Singulare:Url").Value;
-             var user = Configuration.GetSection("Singulare:Usuario").Value;
-             var pswr = Configuration.GetSection("Singulare:Senha").Value;
-             var xmlExistentes = context.tb_aux_retorno_xml_anbima.ToList();
-             var listaFidcs = RecuperarFidcs();
+        using HttpClient client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{pswr}")));
 
-             using HttpClient client = new HttpClient();
-             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{pswr}")));
+        var response = client.PostAsync(url + "painel/token/api", null).Result;
+        var authToken = JsonConvert.DeserializeObject<SingulareApiAuthResponse>(response.Content.ReadAsStringAsync().Result).Token;
 
-             var response = await client.PostAsync(url + "painel/token/api", null);
-             var authToken = JsonConvert.DeserializeObject<SingulareApiAuthResponse>(await response.Content.ReadAsStringAsync()).Token;
+        client.DefaultRequestHeaders.Authorization = null;
+        client.DefaultRequestHeaders.Add("x-api-key", authToken);
 
-             client.DefaultRequestHeaders.Authorization = null;
-             client.DefaultRequestHeaders.Add("x-api-key", authToken);
+        DateTime dataInicial = new(2024, 1, 1);
+        DateTime dataFinal = DateTime.Today.AddDays(-2);
+        //DateTime dataFinal = new DateTime(2024, 10, 1);
 
-             DateTime dataInicial = DateTime.Today;
-             //DateTime dataFinal = new DateTime(2024, 10, 1);
-             DateTime dataFinal = DateTime.Today.AddDays(-1);
+        while (dataInicial <= dataFinal)
+        {
+            var dataPesquisa = ObterDataUtilD2(feriadosAnbima, dataInicial);
+            Debug.WriteLine($"Começando execução para a data {dataPesquisa}", "Aviso");
 
-             while (dataInicial > dataFinal)
-             {
-                 var dataPesquisa = ObterDataUtilD2(feriadosAnbima, dataInicial);
-                 Debug.WriteLine($"Começando execução para a data {dataPesquisa}", "Aviso");
+            foreach (var f in listaFidcs)
+            {
+                var retry = 0;
+                var registroExistente = xmlExistentes.FirstOrDefault(x => x.NomeFundo == f && x.DataCarteira == dataPesquisa);
+                if (registroExistente is null)
+                {
+                    do
+                    {
+                        response = client.GetAsync(url + $"netreport/report/xml-anbima/{f}/{dataPesquisa}").Result;
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var ret = response.Content.ReadAsStringAsync().Result;
+                            var novoXml = new NovoXmlAnbima
+                            {
+                                Id = Guid.NewGuid(),
+                                NomeFundo = f,
+                                DataCarteira = dataPesquisa,
+                                Xml = ret
+                            };
 
-                 foreach (var f in listaFidcs)
-                 {
-                     var retry = 0;
-                     var registroExistente = xmlExistentes.FirstOrDefault(x => x.NomeFundo == f && x.DataCarteira == dataPesquisa);
-                     if (registroExistente is null)
-                     {
-                         do
-                         {
-                             response = await client.GetAsync(url + $"netreport/report/xml-anbima/{f}/{dataPesquisa}");
-                             if (response.IsSuccessStatusCode)
-                             {
-                                 var ret = await response.Content.ReadAsStringAsync();
-                                 var novoXml = new NovoXmlAnbima
-                                 {
-                                     Id = Guid.NewGuid(),
-                                     NomeFundo = f,
-                                     DataCarteira = dataPesquisa,
-                                     Xml = ret
-                                 };
+                            try
+                            {
+                                context.tb_aux_retorno_xml_anbima.Add(novoXml);
+                                xmlExistentes.Add(novoXml);
+                                context.SaveChanges();
+                                Debug.WriteLine($"Adicionado {f} para a data {dataPesquisa}", "Aviso");
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine(ex.InnerException);
+                            }
+                        }
+                        else
+                        {
+                            retry++;
+                            Debug.WriteLine($"{f} não encontrado para a data {dataPesquisa}", "Aviso");
+                            Thread.Sleep(1000);
+                        }
+                    } while (!response.IsSuccessStatusCode && retry <= 0);
+                }
+                else
+                {
+                    Debug.WriteLine($"{f} já inserido para a data {dataPesquisa}", "Aviso");
+                }
+            }
 
-                                 try
-                                 {
-                                     context.tb_aux_retorno_xml_anbima.Add(novoXml);
-                                     xmlExistentes.Add(novoXml);
-                                     context.SaveChanges();
-                                     Debug.WriteLine($"Adicionado {f} para a data {dataPesquisa}", "Aviso");
-                                 }
-                                 catch (Exception ex)
-                                 {
-                                     Debug.WriteLine(ex.InnerException);
-                                 }
-                             }
-                             else
-                             {
-                                 retry++;
-                                 Debug.WriteLine($"{f} não encontrado para a data {dataPesquisa}", "Aviso");
-                                 await Task.Delay(500);
-                             }
-                         } while (!response.IsSuccessStatusCode && retry <= 0);
-                     }
-                     else
-                     {
-                         Debug.WriteLine($"{f} já inserido para a data {dataPesquisa}", "Aviso");
-                     }
-                 }
+            dataInicial = dataInicial.AddDays(1);
+        }
 
-                 dataInicial = dataInicial.AddDays(-1);
-             }
-         }
-
-     } */
+        return Task.CompletedTask;
+    }
 
     private static string FormatarCnpj(string cnpj)
     {

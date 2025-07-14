@@ -46,24 +46,18 @@ namespace WebApi.Controllers
             return Accepted(new { message = "Solicitação recebida, processando CNPJs na base de dados." });
         }
 
-        /* 
-                /// <summary>
-                /// Recupera os XMLs de todos os fundos cadastrados.
-                /// </summary>
-                /// <returns></returns>
-                [HttpPost("RecuperarXmlAnbima")]
-                [ProducesResponseType(202), ProducesResponseType(400)]
-                public IActionResult RecuperarXmlAnbima()
-                {
-                    Task.Run(async () =>
-                    {
-                        // Execute a lógica longa aqui
-                        await _utilidadesService.IniciarRecuperacaoXmlAnbimaAsync();
-                    });
+        /// <summary>
+        /// Recupera os XMLs de todos os fundos cadastrados.
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("RecuperarXmlAnbima")]
+        [ProducesResponseType(202), ProducesResponseType(400)]
+        public IActionResult RecuperarXmlAnbima()
+        {
+            Task.Run(_utilidadesService.RecuperarXmlAnbima);
 
-                    // Retorne 202 Accepted imediatamente sem caracteres especiais
-                    return Accepted(new { message = "Request accepted and is being processed in the background." });
-                } */
+            return Accepted(new { message = "Integração do XML AMBIMA executado com sucesso!" });
+        }
 
         /// <summary>
         /// Retorno para callback de solicitação do relatório de Estoque.
@@ -85,13 +79,9 @@ namespace WebApi.Controllers
         [ProducesResponseType(202), ProducesResponseType(400)]
         public IActionResult RecuperarRelatorioEstoqueSingulare()
         {
-            _backgroundService.AdicionarProcesso(async (serviceProviderNew) =>
-            {
-                var webhookService = serviceProviderNew.GetRequiredService<WebhookService>();
-                await webhookService.RecuperarRelatorioEstoqueSingulare();
-            });
+            Task.Run(_webhookService.RecuperarRelatorioEstoqueSingulare);
 
-            return Accepted(new { message = "Processo adicionado à fila!" });
+            return Accepted(new { message = "Recuperando relatórios de estoque..." });
         }
 
         /// <summary>
@@ -102,13 +92,9 @@ namespace WebApi.Controllers
         [ProducesResponseType(202), ProducesResponseType(400)]
         public IActionResult ProcessarArquivosEstoqueSingulare()
         {
-            _backgroundService.AdicionarProcesso(async (serviceProviderNew) =>
-            {
-                var webhookService = serviceProviderNew.GetRequiredService<WebhookService>();
-                await webhookService.ProcessarArquivosEstoqueSingulare();
-            });
+            Task.Run(_webhookService.ProcessarArquivosEstoqueSingulare);
 
-            return Accepted(new { message = "Processo adicionado à fila!" });
+            return Accepted(new { message = "Integrando arquivos de estoque..." });
         }
     }
 }
