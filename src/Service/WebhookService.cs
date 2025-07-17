@@ -77,11 +77,14 @@ public class WebhookService
     public Task RecuperarRelatorioEstoqueSingulare()
     {
         using var scope = _scopeFactory.CreateScope();
+        var log = _loggerFactory.CreateLogger("RecuperarRelatorioEstoqueSingulare");
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         context.Database.SetCommandTimeout(600); // timeout de 10 minutos para recuperar a tabela inteira...
         var listaFundos = context.tb_stg_estoque_singulare_full.AsNoTracking().Select(s => s.doc_fundo.FormatarCnpj()).Distinct().ToList();
         var listaProcessados = context.tb_aux_relatorios_processados.ToList();
+
+        log.LogInformation("Lista de fundos e arquivos recuperados!");
 
         var url = Configuration.GetSection("Singulare:Url").Value;
         var user = Configuration.GetSection("Singulare:Usuario").Value;
