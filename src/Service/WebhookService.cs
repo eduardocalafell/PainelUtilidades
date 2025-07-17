@@ -19,6 +19,7 @@ public class WebhookService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly HttpClient _client;
     private readonly IConfiguration Configuration;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly List<DateTime> feriadosAnbima = new List<DateTime>
     {
         new DateTime(2024, 1, 1),  // Confraternização Universal
@@ -34,10 +35,11 @@ public class WebhookService
         new DateTime(2024, 12, 25) // Natal
     };
 
-    public WebhookService(AppDbContext context, IServiceScopeFactory serviceScopeFactory)
+    public WebhookService(AppDbContext context, IServiceScopeFactory serviceScopeFactory, ILoggerFactory loggerFactory)
     {
         _context = context;
         _scopeFactory = serviceScopeFactory;
+        _loggerFactory = loggerFactory;
         _client = new HttpClient();
         Configuration = new ConfigurationBuilder()
             .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
@@ -58,6 +60,9 @@ public class WebhookService
                 IsProcessado = false,
             };
 
+            Task.Run(() => ProcessarUnicoArquivoEstoqueSingulare(payloadModel));
+
+            payloadModel.IsProcessado = true;
             _context.tb_aux_callback_estoque_singulare.Add(payloadModel);
             _context.SaveChanges();
         }
@@ -91,7 +96,7 @@ public class WebhookService
         client.DefaultRequestHeaders.Authorization = null;
         client.DefaultRequestHeaders.Add("x-api-key", authToken);
 
-        DateTime dataInicial = new(2024, 1, 1);
+        DateTime dataInicial = new(2025, 1, 1);
         DateTime dataFinal = DateTime.Today;
 
         if (listaFundos.Count > 0)
@@ -246,6 +251,84 @@ public class WebhookService
                 Console.WriteLine($"Erro ao processar arquivo {arquivo.FileLink}: {ex.Message}");
                 return Task.FromException(ex);
             }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task ProcessarUnicoArquivoEstoqueSingulare(WebhookModel retornoWebhook)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var log = _loggerFactory.CreateLogger("ProcessarUnicoArquivoEstoqueSingulare");
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        try
+        {
+            using var ms = new MemoryStream();
+
+            var response = _client.GetAsync(retornoWebhook.FileLink).Result;
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"Erro ao baixar arquivo: {retornoWebhook.FileLink}");
+                throw new Exception("Erro ao baixar o arquivo solicitado!");
+            }
+
+            using var contentStream = response.Content.ReadAsStreamAsync().Result;
+            contentStream.CopyTo(ms);
+            ms.Position = 0;
+
+            using var reader = new StreamReader(ms);
+            using var csv = new CsvReader(reader, new CsvConfiguration
+            {
+                Delimiter = ";",
+                HasHeaderRecord = true
+            });
+
+            var estoque = csv.GetRecords<EstoqueCsv>().ToList();
+            log.LogInformation("Começando integração estoque...");
+
+            foreach (var titulo in estoque)
+            {
+                var linhaEstoque = new EstoqueModel
+                {
+                    nome_fundo = titulo.NM_FUNDO,
+                    doc_fundo = titulo.NU_CNPJ,
+                    data_fundo = titulo.DATA_FUNDO,
+                    nome_originador = titulo.NOME_ORIGINADOR,
+                    doc_originador = titulo.DOC_ORIGINADOR,
+                    nome_cedente = titulo.NOME_CEDENTE,
+                    doc_cedente = titulo.DOC_CEDENTE,
+                    nome_sacado = titulo.NOME_SACADO,
+                    doc_sacado = titulo.DOC_SACADO,
+                    seu_numero = titulo.SEU_NUMERO,
+                    nu_documento = titulo.NU_DOCUMENTO,
+                    tipo_recebivel = titulo.TIPO_RECEBIVEL,
+                    valor_nominal = titulo.VALOR_NOMINAL,
+                    valor_presente = titulo.VALOR_PRESENTE,
+                    valor_aquisicao = titulo.VALOR_AQUISICAO,
+                    valor_pdd = titulo.VALOR_PDD,
+                    faixa_pdd = titulo.FAIXA_PDD,
+                    data_referencia = titulo.DATA_REFERENCIA,
+                    data_vencimento_original = titulo.DATA_VENCIMENTO_ORIGINAL,
+                    data_vencimento_ajustada = titulo.DATA_VENCIMENTO_AJUSTADA,
+                    data_emissao = titulo.DATA_EMISSAO,
+                    data_aquisicao = titulo.DATA_AQUISICAO,
+                    prazo = titulo.PRAZO,
+                    prazo_atual = titulo.PRAZO_ATUAL,
+                    situacao_recebivel = titulo.SITUACAO_RECEBIVEL,
+                    taxa_cessao = titulo.TAXA_CESSAO,
+                    tx_recebivel = titulo.TX_RECEBIVEL,
+                    coobrigacao = titulo.COOBRIGACAO
+                };
+
+                context.tb_stg_estoque_singulare_full.Add(linhaEstoque);
+                context.SaveChanges();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao processar arquivo {retornoWebhook.FileLink}: {ex.Message}");
+            return Task.FromException(ex);
         }
 
         return Task.CompletedTask;

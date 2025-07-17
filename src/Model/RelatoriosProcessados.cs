@@ -9,4 +9,5 @@ public class RelatoriosProcessados
     public string DataSolicitada { get; set; }
     public string? NomeArquivo { get; set; }
     public string? TamanhoArquivo { get; set; }
+    public string DataAtualizacao { get; set; } = DateTime.UtcNow.AddHours(-3).ToString("s");
 }

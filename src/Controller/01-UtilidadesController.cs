@@ -20,17 +20,19 @@ namespace WebApi.Controllers
         private readonly IServiceProvider _serviceProvider;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly UtilidadesService _utilidadesService;
+        private readonly ILoggerFactory _loggerFactory;
         private readonly WebhookService _webhookService;
         private readonly ProcessamentoBackgroundService _backgroundService;
 
-        public UtilidadesController(AppDbContext context, IServiceProvider serviceProvider, ProcessamentoBackgroundService processamentoBackgroundService, IServiceScopeFactory serviceScopeFactory)
+        public UtilidadesController(AppDbContext context, IServiceProvider serviceProvider, ProcessamentoBackgroundService processamentoBackgroundService, IServiceScopeFactory serviceScopeFactory, ILoggerFactory loggerFactory)
         {
             _context = context;
             _serviceProvider = serviceProvider;
             _backgroundService = processamentoBackgroundService;
             _scopeFactory = serviceScopeFactory;
             _utilidadesService = new UtilidadesService(_scopeFactory);
-            _webhookService = new WebhookService(_context, _scopeFactory);
+            _loggerFactory = loggerFactory;
+            _webhookService = new WebhookService(_context, _scopeFactory, _loggerFactory);
         }
 
         /// <summary>
