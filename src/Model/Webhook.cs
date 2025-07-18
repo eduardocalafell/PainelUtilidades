@@ -32,5 +32,6 @@ namespace WebConsultaCnpjReceita.Models
         public string EventType { get; set; }
         public string FileLink { get; set; }
         public bool IsProcessado { get; set; } = false;
+        public string? DataAtualizacao { get; set; } = DateTime.UtcNow.AddHours(-3).ToString("s");
     }
 }

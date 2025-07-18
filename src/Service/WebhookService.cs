@@ -62,7 +62,6 @@ public class WebhookService
 
             Task.Run(() => ProcessarUnicoArquivoEstoqueSingulare(payloadModel));
 
-            payloadModel.IsProcessado = true;
             _context.tb_aux_callback_estoque_singulare.Add(payloadModel);
             _context.SaveChanges();
         }
@@ -129,8 +128,10 @@ public class WebhookService
                         {
                             context.tb_aux_relatorios_processados.Add(new RelatoriosProcessados
                             {
+                                NomeArquivo = response.Content.ReadAsStringAsync().Result,
                                 DataSolicitada = dataPesquisa,
                                 Fundo = fundo,
+                                TamanhoArquivo = "-1",
                             });
 
                             context.SaveChanges();
