@@ -73,7 +73,7 @@ namespace ConsultaCnpjReceita.Model
     [PrimaryKey("Id")]
     public class EstoqueModel
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public Guid? Id { get; set; } = Guid.NewGuid();
         public string nome_fundo { get; set; }
         public string doc_fundo { get; set; }
         public string data_fundo { get; set; }

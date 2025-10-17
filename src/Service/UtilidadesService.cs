@@ -62,11 +62,11 @@ public class UtilidadesService
 
         do
         {
-            cnpjEstoque = context.tb_stg_estoque_singulare_full.AsNoTracking()
-                                                                .Skip(skip).Take(take).ToList()
-                                                                .SelectMany(s => new[] { s.doc_cedente.Replace("/", "").Replace(".", "").Replace("-", ""),
-                                                                    s.doc_sacado.Replace("/", "").Replace(".", "").Replace("-", "") })
-                                                                .Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
+            cnpjEstoque = context.tb_stg_estoque_singulare_full.AsNoTracking().Select(s => new { s.doc_cedente, s.doc_sacado })
+                                                               .Skip(skip).Take(take).ToList()
+                                                               .SelectMany(s => new[] { s.doc_cedente.Replace("/", "").Replace(".", "").Replace("-", ""),
+                                                                           s.doc_sacado.Replace("/", "").Replace(".", "").Replace("-", "") })
+                                                               .Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
 
             foreach (var item in cnpjEstoque)
             {
